@@ -1,13 +1,15 @@
+// src/pages/SignupGov.tsx
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GovShell from "../ui/GovShell";
 import OAuthButtons from "../ui/OAuthButtons";
 
+const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+
 export default function SignupGov() {
   const navJump = useNavigate();
 
   const [citizenName, setCitizenName] = useState("");
-  const [nationalRef, setNationalRef] = useState("");
   const [mailBox, setMailBox] = useState("");
   const [secretPass, setSecretPass] = useState("");
   const [secretAgain, setSecretAgain] = useState("");
@@ -16,12 +18,11 @@ export default function SignupGov() {
 
   const canSubmit = useMemo(() => {
     if (citizenName.trim().length < 3) return false;
-    if (nationalRef.trim().length < 3) return false;
     if (mailBox.trim().length < 4) return false;
     if (secretPass.length < 8) return false;
     if (secretPass !== secretAgain) return false;
     return true;
-  }, [citizenName, nationalRef, mailBox, secretPass, secretAgain]);
+  }, [citizenName, mailBox, secretPass, secretAgain]);
 
   async function onSignupSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -34,11 +35,33 @@ export default function SignupGov() {
 
     setIsWorking(true);
     try {
-      // STUB: replace with backend register call later
-      await new Promise((r) => setTimeout(r, 520));
-      navJump("/login");
-    } catch {
-      setBannerErr("Signup failed.");
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: citizenName.trim(),
+          email: mailBox.trim(),
+          password: secretPass,
+        }),
+      });
+
+      const j = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg =
+          j?.message ||
+          (j?.errors ? Object.values(j.errors).flat().join(" ") : null) ||
+          `Signup failed (${res.status}).`;
+        setBannerErr(msg);
+        return;
+      }
+
+      navJump("/login", {
+        state: { flash: "Account created. Check your email to verify, then sign in." },
+      });
+    } catch (e: any) {
+      setBannerErr(e?.message || "Signup failed.");
     } finally {
       setIsWorking(false);
     }
@@ -62,16 +85,6 @@ export default function SignupGov() {
                 value={citizenName}
                 onChange={(e) => setCitizenName(e.target.value)}
                 placeholder="Full name"
-              />
-            </label>
-
-            <label className="govLabel">
-              <span>National ID (registry reference)</span>
-              <input
-                className="govInput"
-                value={nationalRef}
-                onChange={(e) => setNationalRef(e.target.value)}
-                placeholder="Lebanese ID / registry number"
               />
             </label>
 
@@ -124,7 +137,7 @@ export default function SignupGov() {
 
           <OAuthButtons busy={isWorking} onPick={onOAuthPick} />
 
-          <div style={{ marginTop: 14, fontSize: 13, color: "rgba(175, 120, 24))" }}>
+          <div style={{ marginTop: 14, fontSize: 13, color: "rgb(175, 120, 24)" }}>
             Already registered? <Link to="/login">Sign in</Link>
           </div>
         </>
