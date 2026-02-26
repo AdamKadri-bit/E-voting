@@ -48,7 +48,10 @@ export default function LoginGov() {
     try {
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({
           email: mailBox.trim(),
@@ -93,7 +96,10 @@ export default function LoginGov() {
       // If your backend route name is different, change it here.
       const res = await fetch(`${API_URL}/auth/resend-verification`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({ email }),
       });

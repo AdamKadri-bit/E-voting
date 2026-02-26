@@ -37,7 +37,10 @@ export default function SignupGov() {
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         credentials: "include",
         body: JSON.stringify({
           name: citizenName.trim(),

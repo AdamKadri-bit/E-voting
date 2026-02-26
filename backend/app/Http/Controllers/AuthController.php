@@ -65,7 +65,8 @@ public function register(Request $request)
         'exp' => $now + ($ttlMinutes * 60),
     ];
 
-    $token = \Firebase\JWT\JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+    $jwtSecret = (string) env('JWT_SECRET');
+    $token = \Firebase\JWT\JWT::encode($payload, $jwtSecret, 'HS256');
 
     $cookie = cookie(
         'access_token',
