@@ -22,7 +22,8 @@ class JwtCookieAuth
     }
 
     try {
-        $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key(env('JWT_SECRET'), 'HS256'));
+        $jwtSecret = (string) env('JWT_SECRET');
+        $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key($jwtSecret, 'HS256'));
 
         // Attach decoded claims so controllers/routes can use them
         $request->attributes->set('auth', $decoded);
