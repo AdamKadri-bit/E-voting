@@ -1,6 +1,8 @@
 // src/pages/LoginGov.tsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { ChevronLeft } from "lucide-react";
 import GovShell from "../ui/GovShell";
 import OAuthButtons from "../ui/OAuthButtons";
 
@@ -9,6 +11,14 @@ const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000
 export default function LoginGov() {
   const navJump = useNavigate();
   const loc = useLocation();
+  const { refresh, user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      // already signed in
+      navJump("/");
+    }
+  }, [user, navJump]);
 
   const [mailBox, setMailBox] = useState("");
   const [secretPass, setSecretPass] = useState("");
@@ -72,7 +82,10 @@ export default function LoginGov() {
         return;
       }
 
-      navJump("/dashboard");
+      console.log("Login successful, navigating to home");
+      // refresh auth context so header updates
+      await refresh();
+      navJump("/");
     } catch (e: any) {
       setBannerErr(e?.message || "Sign in failed.");
     } finally {
@@ -129,6 +142,30 @@ export default function LoginGov() {
       subtitle="Access your voting portal. Authentication will be linked to the voter registry and eligibility rules."
       right={
         <>
+          <button
+            type="button"
+            onClick={() => navJump("/")}
+            style={{
+              all: "unset",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "24px",
+              fontSize: "13px",
+              color: "var(--gov-gold)",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            <ChevronLeft size={16} />
+            Back to Home
+          </button>
           <form className="govForm" onSubmit={onLoginSubmit}>
             <label className="govLabel">
               <span>Email</span>
