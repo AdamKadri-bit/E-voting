@@ -1,24 +1,60 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, AlertCircle, Shield, Vote } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import DashboardLayout from "../components/layouts/DashboardLayout";
+import { LogOut, CheckCircle, AlertCircle, Shield, Vote } from "lucide-react";
 
 const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
 
+interface User {
+  sub: number;           // user ID from JWT
+  email: string;
+  role: string;
+  email_verified: boolean;  // boolean from JWT, not a date
+  iat?: number;
+  exp?: number;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, loading, logout } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
-  // if auth finished loading and we have no user, redirect to login
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
+    console.log("💾 Dashboard component mounted");
+    fetchUserData();
+  }, []);
+
+  async function fetchUserData() {
+    try {
+      console.log("📡 Fetching user data from:", API_URL + "/me");
+      const res = await fetch(`${API_URL}/me`, {
+        headers: { "Accept": "application/json" },
+        credentials: "include",
+      });
+
+      console.log("📬 Response status:", res.status, "ok:", res.ok);
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.log("❌ Got 401 Unauthorized, navigating to /login");
+          navigate("/login");
+          return;
+        }
+        throw new Error(`HTTP ${res.status}: Failed to fetch user data`);
+      }
+
+      const data = await res.json();
+      console.log("✅ User data received:", data.user);
+      setUser(data.user);
+    } catch (err: any) {
+      console.error("❌ Error:", err);
+      setError(err.message || "Error loading user data");
+    } finally {
+      setLoading(false);
     }
-  }, [loading, user, navigate]);
+  }
 
   async function resendVerificationEmail() {
     if (!user) return;
@@ -49,57 +85,85 @@ export default function Dashboard() {
     }
   }
 
-  async function handleLogout() {
-    await logout();
-    navigate("/");
-  }
-
-  if (loading) {
-    return (
-      <DashboardLayout userEmail="" onLogout={handleLogout}>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <p>Loading...</p>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <DashboardLayout userEmail="" onLogout={handleLogout}>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <p style={{ color: "#ff6b6b" }}>Authentication required</p>
-          <button
-            onClick={() => navigate("/login")}
-            style={{
-              marginTop: "20px",
-              padding: "10px 20px",
-              background: "rgba(201,162,39,0.62)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              color: "white",
-            }}
-          >
-            Back to Login
-          </button>
-        </div>
-      </DashboardLayout>
-    );
+  function handleLogout() {
+    // Clear auth and redirect
+    navigate("/login");
   }
 
   function goToAdmin() {
     navigate("/admin");
   }
 
+  if (loading) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center", fontFamily: "inherit" }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center", fontFamily: "inherit" }}>
+        <p style={{ color: "#ff6b6b" }}>{error || "User data not found"}</p>
+        <button
+          onClick={() => navigate("/login")}
+          style={{
+            marginTop: "20px",
+            padding: "10px 20px",
+            background: "rgba(201,162,39,0.62)",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            color: "white",
+          }}
+        >
+          Back to Login
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <DashboardLayout userEmail={user.email} onLogout={handleLogout}>
+    <div style={{ fontFamily: "inherit", minHeight: "100vh", background: "var(--gov-bg)" }}>
+      {/* Header */}
+      <div
+        style={{
+          background: "rgba(255,255,255,0.03)",
+          borderBottom: "1px solid rgba(201,162,39,0.2)",
+          padding: "24px 40px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 800 }}>E-Voting Portal</h1>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            padding: "8px 16px",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "8px",
+            color: "white",
+            cursor: "pointer",
+            fontSize: "14px",
+          }}
+        >
+          <LogOut size={16} />
+          Logout
+        </button>
+      </div>
+
       {/* Main Content */}
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "40px 20px" }}>
         {/* Welcome Section */}
         <div style={{ marginBottom: "40px" }}>
           <h2 style={{ fontSize: "32px", fontWeight: 700, margin: "0 0 8px" }}>
-            {user.email}
+            Welcome, {user.email}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.66)", margin: 0 }}>
             Manage your voting account and cast your vote
@@ -211,7 +275,7 @@ export default function Dashboard() {
           {/* Voting Option */}
           {user.email_verified && (
             <button
-              onClick={() => navigate("/voter/dashboard")}
+              onClick={() => navigate("/elections")}
               style={{
                 all: "unset",
                 padding: "24px",
@@ -283,5 +347,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-    </DashboardLayout>
-  );}
+    </div>
+  );
+}
