@@ -1,8 +1,6 @@
 // src/pages/SignupGov.tsx
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 import GovShell from "../ui/GovShell";
 import OAuthButtons from "../ui/OAuthButtons";
 
@@ -10,13 +8,6 @@ const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000
 
 export default function SignupGov() {
   const navJump = useNavigate();
-  const { refresh, user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      navJump("/");
-    }
-  }, [user, navJump]);
 
   const [citizenName, setCitizenName] = useState("");
   const [mailBox, setMailBox] = useState("");
@@ -69,10 +60,8 @@ export default function SignupGov() {
         return;
       }
 
-      // refresh auth context in case backend logged user in
-      await refresh();
-      navJump("/", {
-        state: { flash: "Account created successfully. Verify your email from the link sent to your inbox." },
+      navJump("/login", {
+        state: { flash: "Account created. Check your email to verify, then sign in." },
       });
     } catch (e: any) {
       setBannerErr(e?.message || "Signup failed.");
@@ -91,30 +80,6 @@ export default function SignupGov() {
       subtitle="Registration will be validated against the voter registry (age 21+, civil rights status, registered area)."
       right={
         <>
-          <button
-            type="button"
-            onClick={() => navJump("/")}
-            style={{
-              all: "unset",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              marginBottom: "24px",
-              fontSize: "13px",
-              color: "var(--gov-gold)",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "0.8";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "1";
-            }}
-          >
-            <ChevronLeft size={16} />
-            Back to Home
-          </button>
           <form className="govForm" onSubmit={onSignupSubmit}>
             <label className="govLabel">
               <span>Full name</span>
