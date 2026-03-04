@@ -15,11 +15,31 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 
 Route::get('/me', function (Request $request) {
+    $auth = $request->attributes->get('auth');
+
+    if (!$auth || !isset($auth->sub)) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
+
+    $user = \App\Models\User::find($auth->sub);
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 401);
+    }
+
     return response()->json([
         'ok' => true,
-        'user' => $request->attributes->get('auth'),
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'email_verified_at' => $user->email_verified_at,
+            'email_verified' => $user->hasVerifiedEmail(),
+        ],
     ]);
 })->middleware('jwt.cookie');
+
 Route::post('/email/verification-notification', function (Request $request) {
     $auth = $request->attributes->get('auth');
     $user = \App\Models\User::find($auth->sub);
