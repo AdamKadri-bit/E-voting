@@ -17,9 +17,14 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+       $this->call([
+        \Database\Seeders\ConfessionSeeder::class,
+        \Database\Seeders\GovernorateSeeder::class,
+        \Database\Seeders\DistrictSeeder::class,
+        \Database\Seeders\ConstituencySeeder::class,
+        \Database\Seeders\ConstituencyDistrictSeeder::class,
+        \Database\Seeders\Election2022Seeder::class,
+        \Database\Seeders\ElectionListsSeeder::class,
+    ]);
     }
 }
