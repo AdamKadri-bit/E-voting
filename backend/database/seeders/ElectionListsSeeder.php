@@ -17,7 +17,7 @@ class ElectionListsSeeder extends Seeder
             ->value('id');
 
         if (!$id) {
-            throw new RuntimeException('Election 2022 not found. Check elections table row values.');
+            throw new RuntimeException('Election 2022 not found.');
         }
 
         return (int) $id;
@@ -25,7 +25,9 @@ class ElectionListsSeeder extends Seeder
 
     private function constituencyId(string $code): int
     {
-        $id = DB::table('constituencies')->where('code', $code)->value('id');
+        $id = DB::table('constituencies')
+            ->where('code', $code)
+            ->value('id');
 
         if (!$id) {
             throw new RuntimeException("Missing constituency {$code}");
@@ -37,86 +39,135 @@ class ElectionListsSeeder extends Seeder
     private function makeListCode(int $electionId, int $constituencyId, string $nameEn): string
     {
         $base = Str::slug($nameEn, '_');
+
         if ($base === '') {
             $base = 'list';
         }
 
         $code = strtoupper($electionId . '_' . $constituencyId . '_' . $base);
 
-        // keep within column limit (160)
         return strlen($code) > 160 ? substr($code, 0, 160) : $code;
     }
 
     public function run(): void
     {
-        $election = $this->electionId();
+        $electionId = $this->electionId();
 
-        /**
-         * Structure:
-         * 'CONSTITUENCY_CODE' => [
-         *   ['en' => '...', 'ar' => '...'],
-         *   ...
-         * ]
-         *
-         * If you don't have Arabic yet, set 'ar' => null.
-         */
         $lists = [
+
             'BEIRUT_1' => [
-                ['en' => 'Loubnan Al Seyada',     'ar' => null],
-                ['en' => 'Kenna W Rah Nebaa',     'ar' => null],
-                ['en' => 'Beirut, Nahno Laha',    'ar' => null],
-                ['en' => 'Liwatani',              'ar' => null],
-                ['en' => 'Kadreen',               'ar' => null],
-                ['en' => 'Beirut Madinati',       'ar' => null],
+                ['en' => 'Beirut, Nahno Laha', 'ar' => 'بيروت نحن لها'],
+                ['en' => 'Lubnan Al Siyada', 'ar' => 'لبنان السيادة'],
+                ['en' => 'Kenaa w Rah Nebaa', 'ar' => 'كنا ورح نبقى'],
+                ['en' => 'LiWatani', 'ar' => 'لوطني'],
+                ['en' => 'Qadreen', 'ar' => 'قادرين'],
+                ['en' => 'Beirut Madinati', 'ar' => 'بيروت مدينتي'],
             ],
 
             'BEIRUT_2' => [
-                ['en' => 'Beirut Al Taghyeer',    'ar' => null],
-                ['en' => 'Beirut Badda Alb',      'ar' => null],
-                ['en' => 'Haidi Beirut',          'ar' => null],
-                ['en' => 'Beirut Touwajeh',       'ar' => null],
-                ['en' => 'Wehdat Beirut',         'ar' => null],
-                ['en' => 'Libeirut',              'ar' => null],
-                ['en' => 'Litabka Beirut',        'ar' => null],
-                ['en' => 'Kadreen',               'ar' => null],
-                ['en' => 'Naam LiBeirut',         'ar' => null],
+                ['en' => 'Unity of Beirut', 'ar' => 'وحدة بيروت'],
+                ['en' => 'Beirut Confronts', 'ar' => 'بيروت تواجه'],
+                ['en' => 'For Beirut', 'ar' => 'لبيروت'],
+                ['en' => 'To Preserve Beirut', 'ar' => 'لتبقى بيروت'],
+            ],
+
+            'MOUNT_LEBANON_1' => [
+                ['en' => 'The Heart of Independent Lebanon', 'ar' => 'قلب لبنان المستقل'],
+            ],
+
+            'MOUNT_LEBANON_2' => [
+                ['en' => 'Together Stronger', 'ar' => 'معاً أقوى'],
+            ],
+
+            'MOUNT_LEBANON_3' => [
+                ['en' => 'Baabda Uprises', 'ar' => 'بعبدا تنتفض'],
+            ],
+
+            'MOUNT_LEBANON_4' => [
+                ['en' => 'Partnership and Will', 'ar' => 'الشراكة والإرادة'],
+                ['en' => 'United for Change', 'ar' => 'متحدون للتغيير'],
+                ['en' => 'Mountain List', 'ar' => 'لائحة الجبل'],
+                ['en' => "Nation's Sovereignty", 'ar' => 'سيادة الأمة'],
+                ['en' => 'Your Voice is Revolution', 'ar' => 'صوتك ثورة'],
+            ],
+
+            'NORTH_1' => [
+                ['en' => 'National Moderation', 'ar' => 'الاعتدال الوطني'],
+                ['en' => 'Akkar First', 'ar' => 'عكار أولاً'],
+                ['en' => 'Akkar the Change', 'ar' => 'عكار التغيير'],
+                ['en' => 'Loyalty to Akkar', 'ar' => 'الوفاء لعكار'],
+                ['en' => 'Towards Citizenship', 'ar' => 'نحو المواطنة'],
+            ],
+
+            'NORTH_2' => [
+                ['en' => 'Real Change', 'ar' => 'التغيير الحقيقي'],
+                ['en' => 'For the People', 'ar' => 'للناس'],
+                ['en' => 'Uprise for Sovereignty for Justice', 'ar' => 'انهض للسيادة للعدالة'],
+                ['en' => 'Third Republic', 'ar' => 'الجمهورية الثالثة'],
+            ],
+
+            'NORTH_3' => [
+                ['en' => 'Strong Republic Pulse', 'ar' => 'نبض الجمهورية القوية'],
+                ['en' => 'We are staying here', 'ar' => 'باقون هنا'],
+                ['en' => 'Our North', 'ar' => 'شمالنا'],
+                ['en' => 'Shamalouna', 'ar' => 'شمالنا'],
+                ['en' => 'Taqaddom', 'ar' => 'تقدّم'],
             ],
 
             'BEKAA_1' => [
-                ['en' => 'Seyadeyoon Moustakeloon', 'ar' => null],
-                ['en' => 'Zahle Al Seyada',         'ar' => null],
-                ['en' => 'Zahle Tantafid',          'ar' => null],
-                ['en' => 'Al Kaul Wa Al Fehl',      'ar' => null],
-                ['en' => 'Zahle Al Risala',         'ar' => null],
+                ['en' => 'Independent Sovereignists', 'ar' => 'السياديون المستقلون'],
+                ['en' => 'Zahle Uprises', 'ar' => 'زحلة تنتفض'],
+            ],
+
+            'BEKAA_2' => [
+                ['en' => 'Our Bekaa First', 'ar' => 'بقاعنا أولاً'],
+            ],
+
+            'BEKAA_3' => [
+                ['en' => 'Hope and Loyalty', 'ar' => 'الأمل والوفاء'],
+                ['en' => 'Coalition for Change', 'ar' => 'ائتلاف التغيير'],
+                ['en' => 'Independents against Corruption', 'ar' => 'مستقلون ضد الفساد'],
+                ['en' => 'We are Able', 'ar' => 'قادرين'],
+            ],
+
+            'SOUTH_1' => [
+                ['en' => 'Our Unity in Saida and Jezzine', 'ar' => 'وحدتنا في صيدا وجزين'],
+                ['en' => 'We are the Change', 'ar' => 'نحن التغيير'],
+            ],
+
+            'SOUTH_2' => [
+                ['en' => 'Hope and Loyalty', 'ar' => 'الأمل والوفاء'],
+                ['en' => 'Embracing State', 'ar' => 'الدولة تحتضن'],
+                ['en' => 'The Free Decision', 'ar' => 'القرار الحر'],
+            ],
+
+            'SOUTH_3' => [
+                ['en' => 'Hope and Loyalty', 'ar' => 'الأمل والوفاء'],
             ],
         ];
 
-        foreach ($lists as $constCode => $listRows) {
-            $constId = $this->constituencyId($constCode);
+        foreach ($lists as $constituencyCode => $rows) {
+            $constituencyId = $this->constituencyId($constituencyCode);
 
-            foreach ($listRows as $row) {
-                $en = trim((string)($row['en'] ?? ''));
-                if ($en === '') {
-                    continue;
-                }
-
-                $ar = $row['ar'] ?? null;
-                $listCode = $this->makeListCode($election, $constId, $en);
+            foreach ($rows as $row) {
+                $listCode = $this->makeListCode(
+                    $electionId,
+                    $constituencyId,
+                    $row['en']
+                );
 
                 DB::table('lists')->updateOrInsert(
                     [
-                        'election_id' => $election,
-                        'constituency_id' => $constId,
+                        'election_id' => $electionId,
+                        'constituency_id' => $constituencyId,
                         'list_code' => $listCode,
                     ],
                     [
-                        // keep legacy column populated for any existing code
-                        'list_name' => $en,
-
-                        'list_name_en' => $en,
-                        'list_name_ar' => $ar,
+                        'list_name' => $row['en'],
+                        'list_name_en' => $row['en'],
+                        'list_name_ar' => $row['ar'],
                         'is_withdrawn' => false,
-                        'source_ref' => '2022',
+                        'source_ref' => '2022-verified-partial-dev-seed',
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]

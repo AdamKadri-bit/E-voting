@@ -19,7 +19,6 @@ class DistrictSeeder extends Seeder
     {
         $gov = [
             'BEIRUT' => $this->govId('BEIRUT'),
-
             'MOUNT_LEBANON' => $this->govId('MOUNT_LEBANON'),
             'NORTH' => $this->govId('NORTH'),
             'AKKAR_GOV' => $this->govId('AKKAR'),
@@ -38,7 +37,8 @@ class DistrictSeeder extends Seeder
 
             // North governorate
             ['code'=>'TRIPOLI','name_en'=>'Tripoli','name_ar'=>'طرابلس','governorate_id'=>$gov['NORTH']],
-            ['code'=>'MINIEH_DANNIEH','name_en'=>'Minieh-Dannieh','name_ar'=>'المنية الضنية','governorate_id'=>$gov['NORTH']],
+            ['code'=>'MINIEH','name_en'=>'Minieh','name_ar'=>'المنية','governorate_id'=>$gov['NORTH']],
+            ['code'=>'DANNIEH','name_en'=>'Dannieh','name_ar'=>'الضنية','governorate_id'=>$gov['NORTH']],
             ['code'=>'ZGHARTA','name_en'=>'Zgharta','name_ar'=>'زغرتا','governorate_id'=>$gov['NORTH']],
             ['code'=>'BCHARRE','name_en'=>'Bcharre','name_ar'=>'بشري','governorate_id'=>$gov['NORTH']],
             ['code'=>'KOURA','name_en'=>'Koura','name_ar'=>'الكورة','governorate_id'=>$gov['NORTH']],
@@ -65,7 +65,7 @@ class DistrictSeeder extends Seeder
             ['code'=>'SAIDA','name_en'=>'Saida','name_ar'=>'صيدا','governorate_id'=>$gov['SOUTH']],
             ['code'=>'JEZZINE','name_en'=>'Jezzine','name_ar'=>'جزين','governorate_id'=>$gov['SOUTH']],
             ['code'=>'TYRE','name_en'=>'Tyre','name_ar'=>'صور','governorate_id'=>$gov['SOUTH']],
-            ['code'=>'ZAHARANI','name_en'=>'Zahrani','name_ar'=>'الزهراني','governorate_id'=>$gov['SOUTH']],
+            ['code'=>'ZAHRANI','name_en'=>'Zahrani','name_ar'=>'الزهراني','governorate_id'=>$gov['SOUTH']],
 
             // Nabatieh governorate
             ['code'=>'NABATIEH','name_en'=>'Nabatieh','name_ar'=>'النبطية','governorate_id'=>$gov['NABATIEH']],
