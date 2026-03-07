@@ -6,16 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-   public function up(): void
+    public function up(): void
     {
         Schema::create('electoral_roll_entries', function (Blueprint $table) {
             $table->id();
 
-            // Unique identifier in the roll (mock, but structured like reality)
-            $table->string('national_id_number', 32)->unique();
+            $table->foreignId('election_id')
+                ->constrained('elections')
+                ->cascadeOnDelete();
+
+            $table->string('national_id_number', 32);
 
             $table->string('first_name', 80);
             $table->string('father_name', 80);
@@ -24,8 +24,13 @@ return new class extends Migration
 
             $table->date('date_of_birth');
 
-            $table->foreignId('registered_governorate_id')->constrained('governorates')->restrictOnDelete();
-            $table->foreignId('registered_district_id')->constrained('districts')->restrictOnDelete();
+            $table->foreignId('registered_governorate_id')
+                ->constrained('governorates')
+                ->restrictOnDelete();
+
+            $table->foreignId('registered_district_id')
+                ->constrained('districts')
+                ->restrictOnDelete();
 
             $table->enum('civil_rights_status', ['full', 'restricted'])->default('full');
             $table->enum('eligibility_status', ['eligible', 'ineligible', 'suspended'])->default('eligible');
@@ -33,15 +38,15 @@ return new class extends Migration
 
             $table->timestamps();
 
+            $table->unique(['election_id', 'national_id_number'], 'uq_roll_entry_per_election');
+
+            $table->index(['election_id']);
             $table->index(['registered_governorate_id']);
             $table->index(['registered_district_id']);
             $table->index(['eligibility_status']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('electoral_roll_entries');

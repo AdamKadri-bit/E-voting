@@ -30,7 +30,7 @@ class ConstituencyDistrictSeeder extends Seeder
             'MOUNT_LEBANON_4' => ['CHOUF', 'ALEY'],
 
             'NORTH_1' => ['AKKAR'],
-            'NORTH_2' => ['TRIPOLI', 'MINIEH_DANNIEH'],
+            'NORTH_2' => ['TRIPOLI', 'MINIEH', 'DANNIEH'],
             'NORTH_3' => ['ZGHARTA', 'BCHARRE', 'KOURA', 'BATROUN'],
 
             'BEKAA_1' => ['ZAHLE'],
@@ -38,7 +38,7 @@ class ConstituencyDistrictSeeder extends Seeder
             'BEKAA_3' => ['BAALBEK', 'HERMEL'],
 
             'SOUTH_1' => ['SAIDA', 'JEZZINE'],
-            'SOUTH_2' => ['TYRE', 'ZAHARANI'],
+            'SOUTH_2' => ['TYRE', 'ZAHRANI'],
             'SOUTH_3' => ['NABATIEH', 'BINT_JBEIL', 'MARJAYOUN', 'HASBAYA'],
         ];
 
