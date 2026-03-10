@@ -24,6 +24,10 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\ElectoralRollSeeder::class,
 
             \Database\Seeders\ElectionListsSeeder::class,
+
+            \Database\Seeders\CandidateProfilesSeeder::class,
+            \Database\Seeders\CandidaciesSeeder::class,
+            \Database\Seeders\ListCandidatesSeeder::class,
         ]);
     }
 }
