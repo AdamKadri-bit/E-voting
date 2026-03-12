@@ -2,19 +2,39 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BallotController;
+use App\Http\Controllers\VoteController;
+use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\AuditChainController;
 
 Route::get('/ping', function () {
     return response()->json(['ok' => true]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+*/
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification'])
+    ->middleware('throttle:6,1');
+
+/*
+|--------------------------------------------------------------------------
+| Current User
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/me', function (Request $request) {
+
     $auth = $request->attributes->get('auth');
 
     if (!$auth || !isset($auth->sub)) {
@@ -38,9 +58,17 @@ Route::get('/me', function (Request $request) {
             'email_verified' => $user->hasVerifiedEmail(),
         ],
     ]);
+
 })->middleware('jwt.cookie');
 
+/*
+|--------------------------------------------------------------------------
+| Email Verification
+|--------------------------------------------------------------------------
+*/
+
 Route::post('/email/verification-notification', function (Request $request) {
+
     $auth = $request->attributes->get('auth');
     $user = \App\Models\User::find($auth->sub);
 
@@ -55,9 +83,12 @@ Route::post('/email/verification-notification', function (Request $request) {
     $user->sendEmailVerificationNotification();
 
     return response()->json(['ok' => true]);
+
 })->middleware('jwt.cookie');
 
+
 Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+
     $user = \App\Models\User::find($id);
 
     if (!$user) {
@@ -73,10 +104,43 @@ Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) 
     }
 
     $user->markEmailAsVerified();
+
     event(new \Illuminate\Auth\Events\Verified($user));
 
     return response()->json(['ok' => true]);
+
 })->middleware('signed')->name('verification.verify');
 
-Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification'])
-    ->middleware('throttle:6,1');
+
+/*
+|--------------------------------------------------------------------------
+| Elections + Protected Voting Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('jwt.cookie')->group(function () {
+
+    /*
+    | Fetch ballot
+    */
+    Route::get('/elections/{election}/ballot', [BallotController::class, 'show']);
+
+    /*
+    | Cast vote
+    */
+    Route::post('/elections/{election}/vote', [VoteController::class, 'store']);
+
+    /*
+    | Verify ballot chain
+    */
+    Route::get('/audit/ballot-chain/verify', [AuditChainController::class, 'verifyBallots']);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Receipt verification (public)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/receipts/{receiptHash}', [ReceiptController::class, 'show']);
