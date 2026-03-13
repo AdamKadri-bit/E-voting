@@ -1,15 +1,17 @@
 // src/pages/Dashboard.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Vote,
   Eye,
   BarChart3,
   Lock,
+  ChevronRight,
   UserCheck,
   Receipt,
   ShieldCheck,
   TrendingUp,
+  ArrowRight,
 } from "lucide-react";
 
 import DashboardLayout from "../components/layouts/DashboardLayout";
@@ -25,9 +27,6 @@ type DbUser = {
   role?: string | null;
   email_verified_at?: string | null;
   email_verified?: boolean;
-
-  // later:
-  // kyc_verified?: boolean; // passport/national-id + face match + age checks
 };
 
 type MeResponse = {
@@ -35,6 +34,17 @@ type MeResponse = {
   user?: DbUser;
   message?: string;
   error?: string;
+};
+
+type DashboardOption = {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  color: string;
+  enabled: boolean;
+  to?: string;
+  cta?: string;
+  featured?: boolean;
 };
 
 export default function Dashboard() {
@@ -105,41 +115,44 @@ export default function Dashboard() {
 
   const emailVerified = !!me?.email_verified_at || !!me?.email_verified;
 
-  // Later we’ll flip this when backend sends kyc_verified
-  // const kycVerified = !!me?.kyc_verified;
-
-  // Badge rule you asked:
-  // - yellow: email verified
-  // - green: later when KYC/face match/age rules pass
   const badge = {
     label: emailVerified ? "Verified" : "Unverified",
-    // yellow for email verified, gray otherwise
     color: emailVerified ? "rgba(245, 158, 11, 1)" : "rgba(148, 163, 184, 1)",
-    bg: emailVerified ? "rgba(245, 158, 11, 0.16)" : "rgba(148, 163, 184, 0.12)",
+    bg: emailVerified
+      ? "rgba(245, 158, 11, 0.16)"
+      : "rgba(148, 163, 184, 0.12)",
     border: emailVerified
       ? "rgba(245, 158, 11, 0.35)"
       : "rgba(148, 163, 184, 0.25)",
   };
 
-  const options = [
+  const options: DashboardOption[] = [
     {
-      icon: <Vote size={28} />,
+      icon: <Vote size={30} />,
       title: "Vote in Election",
-      description: "Coming next.",
+      description:
+        "Open the active election and cast your ballot through a secure guided flow.",
       color: "#47a76f",
-      enabled: false,
+      enabled: true,
+      to: "/elections",
+      cta: "Cast ballot",
+      featured: true,
     },
     {
-      icon: <Eye size={28} />,
+      icon: <Eye size={30} />,
       title: "Verify Your Vote",
-      description: "Coming next.",
+      description:
+        "Use your receipt hash to confirm your vote was included in the final tally.",
       color: "#3b82f6",
-      enabled: false,
+      enabled: true,
+      to: "/verify",
+      cta: "Verify receipt",
     },
     {
       icon: <BarChart3 size={28} />,
       title: "System Status",
-      description: "Coming next.",
+      description:
+        "Operational metrics and audit signals will appear here in a later phase.",
       color: "#f59e0b",
       enabled: false,
     },
@@ -159,21 +172,25 @@ export default function Dashboard() {
     {
       icon: <Receipt size={18} />,
       title: "Get a receipt",
-      desc: "You receive a receipt hash you can keep for verification.",
+      desc: "You receive a receipt hash you can keep for later verification.",
     },
     {
       icon: <ShieldCheck size={18} />,
       title: "Verify",
-      desc: "Use your receipt to verify your vote was included in the final tally.",
+      desc: "Use your receipt to confirm inclusion in the final tally.",
     },
   ];
 
-  // Snapshot WITHOUT verification stat (you asked)
   const stats = [
-    { label: "Active elections", value: "—", icon: <Vote size={18} /> },
+    { label: "Active elections", value: "1", icon: <Vote size={18} /> },
     { label: "Votes cast", value: "—", icon: <TrendingUp size={18} /> },
     { label: "Role", value: me?.role ?? "—", icon: <UserCheck size={18} /> },
   ];
+
+  function handleOptionClick(option: DashboardOption) {
+    if (!option.enabled || !option.to) return;
+    nav(option.to);
+  }
 
   return (
     <DashboardLayout
@@ -183,13 +200,26 @@ export default function Dashboard() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px" }}>
         {err && <div className="govError">{err}</div>}
 
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: 38, fontWeight: 900, margin: 0 }}>
+        <div style={{ marginBottom: 30 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 42,
+                fontWeight: 900,
+                margin: 0,
+                lineHeight: 1.05,
+              }}
+            >
               {loading ? "Welcome" : `Welcome${me?.name ? `, ${me.name}` : ""}`}
             </h1>
 
-            {/* Shield badge beside user name */}
             {!loading && (
               <span
                 style={{
@@ -205,11 +235,7 @@ export default function Dashboard() {
                   fontWeight: 900,
                   letterSpacing: 0.2,
                 }}
-                title={
-                  emailVerified
-                    ? "Email verified"
-                    : "Email not verified yet"
-                }
+                title={emailVerified ? "Email verified" : "Email not verified yet"}
               >
                 <ShieldCheck size={14} />
                 {badge.label}
@@ -219,83 +245,266 @@ export default function Dashboard() {
 
           <p
             style={{
-              marginTop: 10,
+              marginTop: 12,
               marginBottom: 0,
               color: "var(--gov-muted)",
-              fontSize: 14,
-              lineHeight: 1.7,
+              fontSize: 15,
+              lineHeight: 1.75,
+              maxWidth: 760,
             }}
           >
-            This is your home page after login. We’ll enable cards as we add pages.
+            Secure voting actions are available below. Start with the active
+            election, then keep your receipt to verify inclusion afterward.
           </p>
 
-          {/* No logout button here (you asked) */}
           {busy === "logout" && (
-            <div style={{ marginTop: 10, color: "var(--gov-muted)", fontSize: 12 }}>
+            <div
+              style={{
+                marginTop: 10,
+                color: "var(--gov-muted)",
+                fontSize: 12,
+              }}
+            >
               Signing out…
             </div>
           )}
         </div>
 
-        {/* Cards */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gridTemplateColumns: "repeat(13, minmax(0, 1fr))",
             gap: 16,
-            marginBottom: 28,
+            marginBottom: 18,
             opacity: loading ? 0.75 : 1,
           }}
         >
-          {options.map((o, i) => (
-            <div key={i} style={{ position: "relative" }}>
-              <Card clickable={false}>
-                <div style={{ display: "grid", gap: 10 }}>
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: `${o.color}20`,
-                      border: `1px solid ${o.color}40`,
-                      display: "grid",
-                      placeItems: "center",
-                      color: o.color,
-                    }}
-                  >
-                    {o.icon}
-                  </div>
+          {options.slice(0, 2).map((o, i) => {
+            const isInteractive = o.enabled && !!o.to;
+            const columnSpan = i === 0 ? "span 8" : "span 5";
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ fontSize: 16, fontWeight: 900 }}>
-                      {o.title}
+            return (
+              <div
+                key={i}
+                style={{
+                  gridColumn: columnSpan,
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  onClick={() => handleOptionClick(o)}
+                  role={isInteractive ? "button" : undefined}
+                  tabIndex={isInteractive ? 0 : -1}
+                  onKeyDown={(e) => {
+                    if (!isInteractive) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleOptionClick(o);
+                    }
+                  }}
+                  style={{
+                    cursor: isInteractive ? "pointer" : "default",
+                    height: "100%",
+                  }}
+                >
+                  <Card clickable={isInteractive}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 16,
+                        minHeight: 220,
+                        height: "100%",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          gap: 12,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: o.featured ? 54 : 48,
+                            height: o.featured ? 54 : 48,
+                            borderRadius: 14,
+                            background: `${o.color}20`,
+                            border: `1px solid ${o.color}40`,
+                            display: "grid",
+                            placeItems: "center",
+                            color: o.color,
+                            boxShadow: o.featured
+                              ? `0 0 0 1px ${o.color}15 inset, 0 8px 30px ${o.color}12`
+                              : undefined,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {o.icon}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            border: "1px solid var(--gov-edge)",
+                            background: "rgba(255,255,255,0.04)",
+                            color: "var(--gov-muted)",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {o.featured ? "Primary action" : "Secondary action"}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <div
+                          style={{
+                            fontSize: o.featured ? 26 : 21,
+                            fontWeight: 900,
+                            lineHeight: 1.15,
+                            letterSpacing: -0.2,
+                          }}
+                        >
+                          {o.title}
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 14,
+                            color: "var(--gov-muted)",
+                            lineHeight: 1.7,
+                            maxWidth: o.featured ? 520 : 420,
+                          }}
+                        >
+                          {o.description}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "auto",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: o.featured ? "12px 16px" : "10px 14px",
+                            borderRadius: 14,
+                            background: o.featured
+                              ? `${o.color}18`
+                              : "rgba(255,255,255,0.05)",
+                            border: `1px solid ${
+                              o.featured ? `${o.color}45` : "var(--gov-edge)"
+                            }`,
+                            color: o.featured ? o.color : "var(--gov-text)",
+                            fontWeight: 900,
+                            fontSize: 14,
+                          }}
+                        >
+                          {o.cta}
+                          <ArrowRight size={16} />
+                        </div>
+
+                        <ChevronRight
+                          size={18}
+                          style={{
+                            opacity: 0.8,
+                            flexShrink: 0,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <Lock size={16} style={{ opacity: 0.7 }} />
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--gov-muted)",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {o.description}
-                  </div>
+                  </Card>
                 </div>
-              </Card>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Stats */}
+        <div style={{ marginBottom: 28 }}>
+          {(() => {
+            const o = options[2];
+            const isInteractive = o.enabled && !!o.to;
+
+            return (
+              <div
+                onClick={() => handleOptionClick(o)}
+                role={isInteractive ? "button" : undefined}
+                tabIndex={isInteractive ? 0 : -1}
+                style={{
+                  cursor: isInteractive ? "pointer" : "default",
+                }}
+              >
+                <Card clickable={isInteractive}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "auto 1fr auto",
+                      alignItems: "center",
+                      gap: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 12,
+                        background: `${o.color}20`,
+                        border: `1px solid ${o.color}40`,
+                        display: "grid",
+                        placeItems: "center",
+                        color: o.color,
+                      }}
+                    >
+                      {o.icon}
+                    </div>
+
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 900,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {o.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "var(--gov-muted)",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {o.description}
+                      </div>
+                    </div>
+
+                    {isInteractive ? (
+                      <ChevronRight size={17} style={{ opacity: 0.8 }} />
+                    ) : (
+                      <Lock size={16} style={{ opacity: 0.7 }} />
+                    )}
+                  </div>
+                </Card>
+              </div>
+            );
+          })()}
+        </div>
+
         <Section
           title="System Snapshot"
           description="High-level signals (placeholder until backend metrics exist)."
@@ -303,7 +512,7 @@ export default function Dashboard() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 16,
             }}
           >
@@ -312,13 +521,14 @@ export default function Dashboard() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div
                     style={{
-                      width: 38,
-                      height: 38,
+                      width: 40,
+                      height: 40,
                       borderRadius: 12,
                       border: "1px solid var(--gov-edge)",
                       display: "grid",
                       placeItems: "center",
                       background: "rgba(255,255,255,0.03)",
+                      flexShrink: 0,
                     }}
                   >
                     {s.icon}
@@ -343,9 +553,17 @@ export default function Dashboard() {
           </div>
         </Section>
 
-        {/* How it works (stacked vertically) */}
-        <Section title="How it works" description="4 steps, simple and verifiable.">
-          <div style={{ display: "grid", gap: 12 }}>
+        <Section
+          title="How it works"
+          description="A short, verifiable path from authentication to vote confirmation."
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
             {howItWorks.map((step, idx) => (
               <Card key={idx}>
                 <div style={{ display: "grid", gap: 10 }}>
@@ -359,6 +577,7 @@ export default function Dashboard() {
                         display: "grid",
                         placeItems: "center",
                         background: "rgba(255,255,255,0.03)",
+                        flexShrink: 0,
                       }}
                     >
                       {step.icon}
@@ -367,6 +586,7 @@ export default function Dashboard() {
                       {step.title}
                     </div>
                   </div>
+
                   <div
                     style={{
                       fontSize: 13,
@@ -382,6 +602,33 @@ export default function Dashboard() {
           </div>
         </Section>
       </div>
+
+      <style>{`
+        @media (max-width: 980px) {
+          .govError {
+            margin-bottom: 16px;
+          }
+        }
+
+        @media (max-width: 960px) {
+          div[style*="repeat(13, minmax(0, 1fr))"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          div[style*="span 8"],
+          div[style*="span 5"] {
+            grid-column: auto !important;
+          }
+
+          div[style*="repeat(3, minmax(0, 1fr))"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          div[style*="repeat(2, minmax(0, 1fr))"] {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </DashboardLayout>
   );
 }
