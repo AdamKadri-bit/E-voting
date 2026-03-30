@@ -8,6 +8,7 @@ use App\Http\Controllers\BallotController;
 use App\Http\Controllers\VoteController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\AuditChainController;
+use App\Http\Controllers\RegistryLinkController;
 
 Route::get('/ping', function () {
     return response()->json(['ok' => true]);
@@ -41,7 +42,7 @@ Route::get('/me', function (Request $request) {
         return response()->json(['message' => 'Unauthenticated'], 401);
     }
 
-    $user = \App\Models\User::find($auth->sub);
+    $user = \App\Models\User::with('registryPerson')->find($auth->sub);
 
     if (!$user) {
         return response()->json(['message' => 'User not found'], 401);
@@ -56,6 +57,21 @@ Route::get('/me', function (Request $request) {
             'role' => $user->role,
             'email_verified_at' => $user->email_verified_at,
             'email_verified' => $user->hasVerifiedEmail(),
+
+            'registry_person_id' => $user->registry_person_id,
+            'verification_status' => $user->verification_status,
+            'can_vote' => $user->can_vote,
+
+            'registry_person' => $user->registryPerson ? [
+                'id' => $user->registryPerson->id,
+                'full_name_en' => $user->registryPerson->full_name_en,
+                'full_name_ar' => $user->registryPerson->full_name_ar,
+                'district' => $user->registryPerson->district,
+                'locality' => $user->registryPerson->locality,
+                'constituency_id' => $user->registryPerson->constituency_id,
+                'is_eligible' => $user->registryPerson->is_eligible,
+                'has_voted' => $user->registryPerson->has_voted,
+            ] : null,
         ],
     ]);
 
@@ -134,6 +150,11 @@ Route::middleware('jwt.cookie')->group(function () {
     | Verify ballot chain
     */
     Route::get('/audit/ballot-chain/verify', [AuditChainController::class, 'verifyBallots']);
+
+    /*
+    | Link voter registry record
+    */
+    Route::post('/registry/link', RegistryLinkController::class);
 });
 
 

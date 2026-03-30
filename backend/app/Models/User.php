@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -22,6 +23,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'registry_person_id',
+        'verification_status',
+        'can_vote',
     ];
 
     /**
@@ -42,6 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'can_vote' => 'boolean',
         ];
     }
 
@@ -51,5 +56,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function voter(): HasOne
     {
         return $this->hasOne(Voter::class);
+    }
+
+    /**
+     * The registry person linked to this user.
+     */
+    public function registryPerson(): BelongsTo
+    {
+        return $this->belongsTo(RegistryPerson::class);
     }
 }
