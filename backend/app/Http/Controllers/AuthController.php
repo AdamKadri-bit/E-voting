@@ -9,124 +9,122 @@ use Firebase\JWT\JWT;
 
 class AuthController extends Controller
 {
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'max:72'],
+        ]);
 
-public function register(Request $request)
-{
-    $data = $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-        'password' => ['required', 'string', 'min:8', 'max:72'],
-    ]);
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'role' => 'voter',
+            'verification_status' => 'account_created',
+            'can_vote' => false,
+        ]);
 
-    $user = User::create([
-        'name' => $data['name'],
-        'email' => $data['email'],
-        'password' => Hash::make($data['password']),
-        'role' => 'voter', // default role
-    ]);
+        $user->sendEmailVerificationNotification();
 
-    $user->sendEmailVerificationNotification();
-
-    return response()->json([
-        'ok' => true,
-        'user_id' => $user->id,
-    ]);
-}
-
-
-  public function login(Request $request)
-{
-    $data = $request->validate([
-        'email' => ['required', 'string', 'email'],
-        'password' => ['required', 'string'],
-    ]);
-
-    $user = User::where('email', $data['email'])->first();
-
-    if (!$user || !Hash::check($data['password'], $user->password)) {
-        return response()->json(['message' => 'Invalid credentials'], 401);
+        return response()->json([
+            'ok' => true,
+            'user_id' => $user->id,
+        ]);
     }
 
-    if ($user->email_verified_at === null) {
-    return response()->json([
-        'message' => 'Email not verified',
-    ], 403);
-}
+    public function login(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
 
-    $now = time();
-    $ttlMinutes = (int) env('JWT_TTL_MINUTES', 15);
+        $user = User::where('email', $data['email'])->first();
 
-    $payload = [
-        'sub' => $user->id,
-        'email' => $user->email,
-        'role' => $user->role,
-        'email_verified' => $user->email_verified_at !== null,
-        'iat' => $now,
-        'exp' => $now + ($ttlMinutes * 60),
-    ];
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
 
-    $jwtSecret = (string) env('JWT_SECRET');
-    $token = \Firebase\JWT\JWT::encode($payload, $jwtSecret, 'HS256');
+        if ($user->email_verified_at === null) {
+            return response()->json([
+                'message' => 'Email not verified',
+            ], 403);
+        }
 
-    $cookie = cookie(
-        'access_token',
-        $token,
-        $ttlMinutes,   // minutes
-        '/',
-        null,
-        false,         // secure (false for localhost)
-        true,          // httpOnly
-        false,
-        'Lax'
-    );
+        $now = time();
+        $ttlMinutes = (int) env('JWT_TTL_MINUTES', 15);
 
-    return response()->json([
-        'ok' => true,
-    ])->withCookie($cookie);
-}
+        $payload = [
+            'sub' => $user->id,
+            'email' => $user->email,
+            'role' => $user->role,
+            'email_verified' => $user->email_verified_at !== null,
+            'iat' => $now,
+            'exp' => $now + ($ttlMinutes * 60),
+        ];
 
+        $jwtSecret = (string) env('JWT_SECRET');
+        $token = JWT::encode($payload, $jwtSecret, 'HS256');
+
+        $cookie = cookie(
+            'access_token',
+            $token,
+            $ttlMinutes,
+            '/',
+            null,
+            false,
+            true,
+            false,
+            'Lax'
+        );
+
+        return response()->json([
+            'ok' => true,
+        ])->withCookie($cookie);
+    }
 
     public function refresh(Request $request)
     {
         return response()->json(['todo' => 'refresh']);
     }
 
-   public function logout(Request $request)
-{
-    $cookie = cookie(
-        'access_token',
-        '',
-        -1,     // expire immediately
-        '/',
-        null,
-        false,
-        true,
-        false,
-        'Lax'
-    );
+    public function logout(Request $request)
+    {
+        $cookie = cookie(
+            'access_token',
+            '',
+            -1,
+            '/',
+            null,
+            false,
+            true,
+            false,
+            'Lax'
+        );
 
-    return response()->json(['ok' => true])->withCookie($cookie);
-}
+        return response()->json(['ok' => true])->withCookie($cookie);
+    }
 
-public function resendVerification(Request $request)
-{
-    $data = $request->validate([
-        'email' => ['required', 'string', 'email'],
-    ]);
+    public function resendVerification(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
 
-    $user = User::where('email', $data['email'])->first();
+        $user = User::where('email', $data['email'])->first();
 
-    // Don't leak whether the email exists (prevents user enumeration)
-    if (!$user) {
+        if (!$user) {
+            return response()->json(['ok' => true]);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['ok' => true, 'already_verified' => true]);
+        }
+
+        $user->sendEmailVerificationNotification();
+
         return response()->json(['ok' => true]);
     }
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json(['ok' => true, 'already_verified' => true]);
-    }
-
-    $user->sendEmailVerificationNotification();
-
-    return response()->json(['ok' => true]);
-}
 }

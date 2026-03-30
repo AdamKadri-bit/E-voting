@@ -20,6 +20,17 @@ import { Card, Section } from "../components/common/Card";
 const API_URL =
   (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
 
+type RegistryPerson = {
+  id?: number | string;
+  full_name_en?: string | null;
+  full_name_ar?: string | null;
+  district?: string | null;
+  locality?: string | null;
+  constituency_id?: number | null;
+  is_eligible?: boolean;
+  has_voted?: boolean;
+};
+
 type DbUser = {
   id?: number | string;
   name?: string | null;
@@ -27,6 +38,10 @@ type DbUser = {
   role?: string | null;
   email_verified_at?: string | null;
   email_verified?: boolean;
+  registry_person_id?: number | string | null;
+  verification_status?: string | null;
+  can_vote?: boolean;
+  registry_person?: RegistryPerson | null;
 };
 
 type MeResponse = {
@@ -114,6 +129,9 @@ export default function Dashboard() {
   }, []);
 
   const emailVerified = !!me?.email_verified_at || !!me?.email_verified;
+  const registryLinked = !!me?.registry_person_id;
+  const canVote = !!me?.can_vote;
+  const hasVoted = !!me?.registry_person?.has_voted;
 
   const badge = {
     label: emailVerified ? "Verified" : "Unverified",
@@ -126,66 +144,153 @@ export default function Dashboard() {
       : "rgba(148, 163, 184, 0.25)",
   };
 
-  const options: DashboardOption[] = [
-    {
-      icon: <Vote size={30} />,
-      title: "Vote in Election",
-      description:
-        "Open the active election and cast your ballot through a secure guided flow.",
-      color: "#47a76f",
-      enabled: true,
-      to: "/elections",
-      cta: "Cast ballot",
-      featured: true,
-    },
-    {
-      icon: <Eye size={30} />,
-      title: "Verify Your Vote",
-      description:
-        "Use your receipt hash to confirm your vote was included in the final tally.",
-      color: "#3b82f6",
-      enabled: true,
-      to: "/verify",
-      cta: "Verify receipt",
-    },
-    {
-      icon: <BarChart3 size={28} />,
-      title: "System Status",
-      description:
-        "Operational metrics and audit signals will appear here in a later phase.",
-      color: "#f59e0b",
-      enabled: false,
-    },
-  ];
+  const options: DashboardOption[] = registryLinked
+    ? [
+        {
+          icon: <Vote size={30} />,
+          title: hasVoted ? "Vote Recorded" : "Vote in Election",
+          description: hasVoted
+            ? "This voter record is already marked as having voted."
+            : canVote
+            ? "Open the active election and cast your ballot through a secure guided flow."
+            : "Voting is currently locked for this account.",
+          color: "#47a76f",
+          enabled: !hasVoted && canVote,
+          to: !hasVoted && canVote ? "/elections" : undefined,
+          cta: hasVoted ? "Already voted" : canVote ? "Cast ballot" : "Locked",
+          featured: true,
+        },
+        {
+          icon: <Eye size={30} />,
+          title: "Verify Your Vote",
+          description: hasVoted
+            ? "Use your receipt hash to confirm your vote was included in the final tally."
+            : "Verification becomes useful after a vote has been recorded.",
+          color: "#3b82f6",
+          enabled: hasVoted,
+          to: hasVoted ? "/verify" : undefined,
+          cta: hasVoted ? "Verify receipt" : "Unavailable",
+        },
+        {
+          icon: <BarChart3 size={28} />,
+          title: "System Status",
+          description:
+            "Operational metrics and audit signals will appear here in a later phase.",
+          color: "#f59e0b",
+          enabled: false,
+        },
+      ]
+    : [
+        {
+          icon: <UserCheck size={30} />,
+          title: "Verify Voter Record",
+          description:
+            "Match this platform account to a voter registry record before voting is unlocked.",
+          color: "#3b82f6",
+          enabled: true,
+          to: "/verify-voter",
+          cta: "Start verification",
+          featured: true,
+        },
+        {
+          icon: <Vote size={30} />,
+          title: "Vote in Election",
+          description: "Locked until your voter registry record is verified.",
+          color: "#47a76f",
+          enabled: false,
+          cta: "Locked",
+        },
+        {
+          icon: <BarChart3 size={28} />,
+          title: "System Status",
+          description:
+            "Operational metrics and audit signals will appear here in a later phase.",
+          color: "#f59e0b",
+          enabled: false,
+        },
+      ];
 
-  const howItWorks = [
-    {
-      icon: <UserCheck size={18} />,
-      title: "Authenticate",
-      desc: "Sign in securely. Your session is stored in an HttpOnly cookie.",
-    },
-    {
-      icon: <Vote size={18} />,
-      title: "Cast your vote",
-      desc: "Choose your candidate/list and submit your encrypted ballot.",
-    },
-    {
-      icon: <Receipt size={18} />,
-      title: "Get a receipt",
-      desc: "You receive a receipt hash you can keep for later verification.",
-    },
-    {
-      icon: <ShieldCheck size={18} />,
-      title: "Verify",
-      desc: "Use your receipt to confirm inclusion in the final tally.",
-    },
-  ];
+  const howItWorks = registryLinked
+    ? [
+        {
+          icon: <UserCheck size={18} />,
+          title: "Authenticated",
+          desc: "Your account is signed in and linked to a voter registry record.",
+        },
+        {
+          icon: <Vote size={18} />,
+          title: "Cast your vote",
+          desc: "Choose your candidate/list and submit your encrypted ballot.",
+        },
+        {
+          icon: <Receipt size={18} />,
+          title: "Get a receipt",
+          desc: "You receive a receipt hash you can keep for later verification.",
+        },
+        {
+          icon: <ShieldCheck size={18} />,
+          title: "Verify",
+          desc: "Use your receipt to confirm inclusion in the final tally.",
+        },
+      ]
+    : [
+        {
+          icon: <UserCheck size={18} />,
+          title: "Authenticate",
+          desc: "Sign in securely. Your session is stored in an HttpOnly cookie.",
+        },
+        {
+          icon: <ShieldCheck size={18} />,
+          title: "Verify voter record",
+          desc: "Match your platform account to a voter registry record.",
+        },
+        {
+          icon: <Vote size={18} />,
+          title: "Unlock voting",
+          desc: "Once linked, the correct constituency ballot can be opened.",
+        },
+        {
+          icon: <Receipt size={18} />,
+          title: "Cast and verify",
+          desc: "Vote securely, receive a receipt, and verify inclusion later.",
+        },
+      ];
 
-  const stats = [
-    { label: "Active elections", value: "1", icon: <Vote size={18} /> },
-    { label: "Votes cast", value: "—", icon: <TrendingUp size={18} /> },
-    { label: "Role", value: me?.role ?? "—", icon: <UserCheck size={18} /> },
-  ];
+  const stats = registryLinked
+    ? [
+        {
+          label: "Account status",
+          value: "Linked",
+          icon: <UserCheck size={18} />,
+        },
+        {
+          label: "Voting access",
+          value: canVote ? "Unlocked" : "Locked",
+          icon: <Vote size={18} />,
+        },
+        {
+          label: "Role",
+          value: me?.role ?? "—",
+          icon: <TrendingUp size={18} />,
+        },
+      ]
+    : [
+        {
+          label: "Account status",
+          value: "Pending verification",
+          icon: <UserCheck size={18} />,
+        },
+        {
+          label: "Voting access",
+          value: "Locked",
+          icon: <Vote size={18} />,
+        },
+        {
+          label: "Role",
+          value: me?.role ?? "—",
+          icon: <TrendingUp size={18} />,
+        },
+      ];
 
   function handleOptionClick(option: DashboardOption) {
     if (!option.enabled || !option.to) return;
@@ -253,8 +358,9 @@ export default function Dashboard() {
               maxWidth: 760,
             }}
           >
-            Secure voting actions are available below. Start with the active
-            election, then keep your receipt to verify inclusion afterward.
+            {registryLinked
+              ? "Secure voting actions are available below. Start with the active election, then keep your receipt to verify inclusion afterward."
+              : "Your platform account is active, but voting remains locked until your voter record is verified."}
           </p>
 
           {busy === "logout" && (

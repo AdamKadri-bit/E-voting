@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import LoginGov from "./pages/LoginGov";
 import SignupGov from "./pages/SignupGov";
@@ -7,13 +7,14 @@ import ElectionsPage from "./pages/ElectionsPage";
 import BallotPage from "./pages/BallotPage";
 import ReceiptPage from "./pages/ReceiptPage";
 import VerifyVotePage from "./pages/VerifyVotePage";
+import VoterVerificationPage from "./pages/VoterVerificationPage";
 import ProtectedRoute from "./pages/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<LoginGov />} />
         <Route path="/signup" element={<SignupGov />} />
 
@@ -22,6 +23,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/verify-voter"
+          element={
+            <ProtectedRoute>
+              <VoterVerificationPage />
             </ProtectedRoute>
           }
         />
@@ -45,7 +55,7 @@ export default function App() {
         />
 
         <Route
-          path="/receipt/:receiptHash"
+          path="/receipt/:hash"
           element={
             <ProtectedRoute>
               <ReceiptPage />
@@ -61,8 +71,6 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
