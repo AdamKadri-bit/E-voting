@@ -22,11 +22,60 @@ async function handle<T = any>(res: Response): Promise<T> {
   return data as T;
 }
 
+export type RegistryLinkPayload = {
+  full_name: string;
+  father_name: string;
+  mother_name: string;
+  date_of_birth: string;
+  civil_registry_number?: string | null;
+};
+
+export type LebaneseIdOcrData = RegistryLinkPayload & {
+  national_id_number?: string | null;
+  place_of_birth?: string | null;
+  governorate?: string | null;
+  district?: string | null;
+  locality?: string | null;
+  ocr_debug?: {
+    front_text?: string;
+    back_text?: string;
+  };
+};
+
 export async function getMe() {
   const res = await fetch(`${API}/me`, {
     method: "GET",
     headers: { Accept: "application/json" },
     credentials: "include",
+  });
+
+  return handle(res);
+}
+
+export async function extractLebaneseIdOcr(frontImage: File, backImage: File) {
+  const formData = new FormData();
+  formData.append("front_image", frontImage);
+  formData.append("back_image", backImage);
+
+  const res = await fetch(`${API}/ocr/lebanese-id`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    credentials: "include",
+    body: formData,
+  });
+
+  return handle<{ ok: boolean; data: LebaneseIdOcrData }>(res);
+}
+
+export async function linkRegistry(payload: RegistryLinkPayload) {
+  const res = await fetch(`${API}/registry/link`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
   return handle(res);
