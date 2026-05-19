@@ -9,6 +9,7 @@ use App\Http\Controllers\VoteController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\AuditChainController;
 use App\Http\Controllers\RegistryLinkController;
+use App\Http\Controllers\LebaneseIdOcrController;
 
 Route::get('/ping', function () {
     return response()->json(['ok' => true]);
@@ -150,6 +151,11 @@ Route::middleware('jwt.cookie')->group(function () {
     | Verify ballot chain
     */
     Route::get('/audit/ballot-chain/verify', [AuditChainController::class, 'verifyBallots']);
+
+    /*
+    | OCR Lebanese ID (front + back)
+    */
+    Route::post('/ocr/lebanese-id', [LebaneseIdOcrController::class, 'extract']);
 
     /*
     | Link voter registry record
