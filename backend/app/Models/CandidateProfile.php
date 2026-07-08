@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CandidateProfile extends Model
 {
+    // Matches the actual candidate_profiles schema (bilingual full name).
     protected $fillable = [
         'national_id_number',
-        'first_name',
-        'father_name',
-        'last_name',
-        'mother_full_name',
+        'full_name',
+        'full_name_ar',
         'date_of_birth',
-        'place_of_birth',
+        'civil_rights_status',
     ];
 
     protected $casts = [

@@ -11,6 +11,12 @@ use App\Http\Controllers\AuditChainController;
 use App\Http\Controllers\RegistryLinkController;
 use App\Http\Controllers\LebaneseIdOcrController;
 
+use App\Http\Controllers\Admin\OverviewController;
+use App\Http\Controllers\Admin\ElectionAdminController;
+use App\Http\Controllers\Admin\ListAdminController;
+use App\Http\Controllers\Admin\CandidateAdminController;
+use App\Http\Controllers\Admin\ResultsController;
+
 Route::get('/ping', function () {
     return response()->json(['ok' => true]);
 });
@@ -171,3 +177,44 @@ Route::middleware('jwt.cookie')->group(function () {
 */
 
 Route::get('/receipts/{receiptHash}', [ReceiptController::class, 'show']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Admin panel (role-guarded)
+|--------------------------------------------------------------------------
+| All routes require a valid JWT cookie AND an admin role (EnsureAdmin).
+*/
+
+Route::middleware(['jwt.cookie', 'admin'])->prefix('admin')->group(function () {
+
+    Route::get('/overview', [OverviewController::class, 'index']);
+
+    /* Elections */
+    Route::get('/constituencies', [ElectionAdminController::class, 'constituencies']);
+    Route::get('/elections', [ElectionAdminController::class, 'index']);
+    Route::post('/elections', [ElectionAdminController::class, 'store']);
+    Route::get('/elections/{election}', [ElectionAdminController::class, 'show']);
+    Route::put('/elections/{election}', [ElectionAdminController::class, 'update']);
+    Route::patch('/elections/{election}/status', [ElectionAdminController::class, 'updateStatus']);
+    Route::put('/elections/{election}/constituencies', [ElectionAdminController::class, 'syncConstituencies']);
+
+    /* Lists */
+    Route::get('/elections/{election}/lists', [ListAdminController::class, 'index']);
+    Route::post('/elections/{election}/lists', [ListAdminController::class, 'store']);
+    Route::put('/lists/{list}', [ListAdminController::class, 'update']);
+    Route::delete('/lists/{list}', [ListAdminController::class, 'destroy']);
+    Route::get('/lists/{list}/available-candidacies', [ListAdminController::class, 'availableCandidacies']);
+    Route::post('/lists/{list}/candidates', [ListAdminController::class, 'addCandidate']);
+    Route::delete('/lists/{list}/candidates/{listCandidate}', [ListAdminController::class, 'removeCandidate']);
+
+    /* Candidacies */
+    Route::get('/elections/{election}/candidacies', [CandidateAdminController::class, 'index']);
+    Route::post('/elections/{election}/candidacies', [CandidateAdminController::class, 'store']);
+    Route::patch('/candidacies/{candidacy}/status', [CandidateAdminController::class, 'updateStatus']);
+
+    /* Results & audit */
+    Route::get('/elections/{election}/results', [ResultsController::class, 'results']);
+    Route::get('/audit/logs', [ResultsController::class, 'auditLogs']);
+    Route::get('/audit/chain', [ResultsController::class, 'verifyChain']);
+});

@@ -123,6 +123,17 @@ button {
   background: rgba(201, 162, 39, 0.25);
 }
 
+/* Gold call-to-action button (alias used across admin + auth actions) */
+.govBtnGold {
+  border-color: rgba(201, 162, 39, 0.62);
+  background: rgba(201, 162, 39, 0.19);
+  color: var(--gov-ink);
+}
+
+.govBtnGold:hover {
+  background: rgba(201, 162, 39, 0.25);
+}
+
 /* --- form styles (THIS is what was missing) --- */
 .govForm {
   display: grid;
