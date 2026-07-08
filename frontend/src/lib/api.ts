@@ -95,7 +95,8 @@ export async function castVote(
   electionId: number,
   payload: {
     list_id: number;
-    candidate_id?: number | null;
+    // Backend (VoteController) validates this exact key. Must match server contract.
+    preferential_candidacy_id?: number | null;
   }
 ) {
   const res = await fetch(`${API}/elections/${electionId}/vote`, {

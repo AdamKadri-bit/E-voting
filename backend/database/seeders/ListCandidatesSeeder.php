@@ -185,10 +185,14 @@ class ListCandidatesSeeder extends Seeder
     {
         $normalizedName = $this->normalizeListName($constituencyCode, $listNameEn);
 
+        // Match the list name case-insensitively so seeding is portable across
+        // databases. MySQL's default collation (utf8mb4_*_ci) is case-insensitive,
+        // but SQLite compares case-sensitively by default — an exact match would
+        // then fail for names that differ only in casing (e.g. "Against" vs "against").
         $id = DB::table('lists')
             ->where('election_id', $electionId)
             ->where('constituency_id', $constituencyId)
-            ->where('list_name_en', $normalizedName)
+            ->whereRaw('LOWER(list_name_en) = ?', [mb_strtolower($normalizedName)])
             ->value('id');
 
         if (!$id) {
