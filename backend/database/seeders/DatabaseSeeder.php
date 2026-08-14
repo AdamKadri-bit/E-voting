@@ -29,7 +29,8 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\CandidaciesSeeder::class,
             \Database\Seeders\ListCandidatesSeeder::class,
             \Database\Seeders\TestVoterSeeder::class,
-            
+            \Database\Seeders\AdminUserSeeder::class,
+
         ]);
     }
 }

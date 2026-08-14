@@ -135,12 +135,17 @@ export default function BallotPage() {
     setError(null);
 
     try {
+      // selectedCandidateId holds a candidacy_id; the backend expects it as
+      // preferential_candidacy_id (the optional preferential choice on the list).
       const result = await castVote(Number(electionId), {
         list_id: selectedListId,
-        candidate_id: selectedCandidateId,
+        preferential_candidacy_id: selectedCandidateId,
       });
 
+      // The backend returns the hash nested as `receipt.receipt_hash`.
+      // Keep the other shapes as fallbacks for compatibility.
       const receiptHash =
+        result?.receipt?.receipt_hash ||
         result?.receipt_hash ||
         result?.receiptHash ||
         result?.receipt?.hash ||

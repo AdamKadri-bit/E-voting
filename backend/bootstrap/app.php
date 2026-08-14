@@ -14,10 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->group('api', [
             \Illuminate\Http\Middleware\HandleCors::class,
+            // Enables implicit route-model binding (e.g. Election $election).
+            // Only substitutes type-hinted model params, so existing routes that
+            // take raw string params are unaffected.
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
         
         $middleware->alias([
             'jwt.cookie' => \App\Http\Middleware\JwtCookieAuth::class,
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

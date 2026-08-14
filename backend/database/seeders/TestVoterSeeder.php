@@ -8,15 +8,28 @@ use App\Models\Voter;
 use App\Models\Election;
 use App\Models\VoterElectionStatus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class TestVoterSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::where('email', 'edwin@gmail.com')->first();
+        // Ensure the demo voter account exists so a fresh clone can seed and log in
+        // without a manual signup step. Login: edwin@gmail.com / Password123!
+        $user = User::firstOrCreate(
+            ['email' => 'edwin@gmail.com'],
+            [
+                'name' => 'Edwin Hosri',
+                'password' => Hash::make('Password123!'),
+                'role' => 'voter',
+                'verification_status' => 'account_created',
+                'can_vote' => true,
+            ]
+        );
 
-        if (!$user) {
-            throw new \RuntimeException('User edwin@gmail.com not found.');
+        // Email verification is required before login; mark the demo account verified.
+        if (!$user->hasVerifiedEmail()) {
+            $user->forceFill(['email_verified_at' => now()])->save();
         }
 
         $election = Election::first();
