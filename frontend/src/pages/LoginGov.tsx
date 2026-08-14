@@ -81,9 +81,22 @@ export default function LoginGov() {
       });
       const me = await meRes.json().catch(() => null);
 
-      navJump(me?.user?.role === "admin" ? "/admin" : "/dashboard", {
-        replace: true,
-      });
+      if (me?.user?.role === "admin") {
+        // Administrator accounts are not admitted through the voter portal, so
+        // end the session that was just opened rather than leaving one behind.
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        }).catch(() => {});
+
+        setBannerErr(
+          "Administrator accounts cannot sign in here. Use the administrator portal."
+        );
+        return;
+      }
+
+      navJump("/dashboard", { replace: true });
     } catch (e: any) {
       setBannerErr(e?.message || "Sign in failed.");
     } finally {
