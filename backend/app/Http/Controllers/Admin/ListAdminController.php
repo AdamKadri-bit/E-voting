@@ -79,6 +79,13 @@ class ListAdminController extends Controller
 
         $list->update($data);
 
+        $this->audit->log(
+            $request->attributes->get('admin_user'),
+            'admin.list.updated',
+            ['election_id' => $list->election_id, 'list_id' => $list->id, 'fields' => array_keys($data)],
+            $request
+        );
+
         return response()->json(['list' => $list]);
     }
 
@@ -144,17 +151,32 @@ class ListAdminController extends Controller
             'position_order' => $data['position_order'] ?? null,
         ]);
 
+        $this->audit->log(
+            $request->attributes->get('admin_user'),
+            'admin.list.candidate_added',
+            ['election_id' => $list->election_id, 'list_id' => $list->id, 'candidacy_id' => $candidacy->id],
+            $request
+        );
+
         return response()->json(['list_candidate' => $member], 201);
     }
 
     /** Remove a candidate from a list. */
-    public function removeCandidate(ElectionList $list, ListCandidate $listCandidate)
+    public function removeCandidate(Request $request, ElectionList $list, ListCandidate $listCandidate)
     {
         if ($listCandidate->list_id !== $list->id) {
             return response()->json(['message' => 'Not a member of this list.'], 404);
         }
 
+        $candidacyId = $listCandidate->candidacy_id;
         $listCandidate->delete();
+
+        $this->audit->log(
+            $request->attributes->get('admin_user'),
+            'admin.list.candidate_removed',
+            ['election_id' => $list->election_id, 'list_id' => $list->id, 'candidacy_id' => $candidacyId],
+            $request
+        );
 
         return response()->json(['ok' => true]);
     }

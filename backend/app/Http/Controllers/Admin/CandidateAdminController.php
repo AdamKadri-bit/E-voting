@@ -100,6 +100,13 @@ class CandidateAdminController extends Controller
             'rejection_reason' => $data['rejection_reason'] ?? null,
         ]);
 
+        $this->audit->log(
+            $request->attributes->get('admin_user'),
+            'admin.candidacy.status_changed',
+            ['election_id' => $candidacy->election_id, 'candidacy_id' => $candidacy->id, 'status' => $data['status']],
+            $request
+        );
+
         return response()->json(['candidacy' => $candidacy]);
     }
 }

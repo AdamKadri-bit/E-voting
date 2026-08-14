@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CandidateProfile extends Model
 {
+    use HasFactory;
+
     // Matches the actual candidate_profiles schema (bilingual full name).
     protected $fillable = [
         'national_id_number',

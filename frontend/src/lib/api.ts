@@ -185,6 +185,10 @@ export type ElectionInput = {
   status: "draft" | "active" | "closed";
 };
 
+// Status is intentionally excluded — status transitions go through
+// adminSetElectionStatus() so its activation guard can't be bypassed.
+export type ElectionUpdateInput = Omit<ElectionInput, "status">;
+
 // Overview
 export const adminOverview = () => adminReq("/overview");
 
@@ -195,7 +199,7 @@ export const adminGetElection = (id: number) =>
   adminReq<{ election: AdminElection }>(`/elections/${id}`);
 export const adminCreateElection = (payload: ElectionInput) =>
   adminReq<{ election: AdminElection }>("/elections", "POST", payload);
-export const adminUpdateElection = (id: number, payload: ElectionInput) =>
+export const adminUpdateElection = (id: number, payload: ElectionUpdateInput) =>
   adminReq<{ election: AdminElection }>(`/elections/${id}`, "PUT", payload);
 export const adminSetElectionStatus = (id: number, status: string) =>
   adminReq(`/elections/${id}/status`, "PATCH", { status });
@@ -247,6 +251,19 @@ export const adminCreateCandidacy = (
 // Results & audit
 export const adminResults = (electionId: number) =>
   adminReq(`/elections/${electionId}/results`);
+export type TurnoutTimeline = {
+  status: string;
+  window: {
+    from: string;
+    to: string;
+    bucket_seconds: number;
+    bucket_count: number;
+  } | null;
+  buckets: { index: number; start: string; end: string; count: number }[];
+  total_ballots: number;
+};
+export const adminTurnoutTimeline = (electionId: number, buckets = 24) =>
+  adminReq<TurnoutTimeline>(`/elections/${electionId}/turnout-timeline?buckets=${buckets}`);
 export const adminAuditLogs = (perPage = 25) =>
   adminReq(`/audit/logs?per_page=${perPage}`);
 export const adminVerifyChain = () => adminReq(`/audit/chain`);

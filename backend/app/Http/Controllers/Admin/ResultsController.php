@@ -17,6 +17,14 @@ class ResultsController extends Controller
         return response()->json($tally->tally($election));
     }
 
+    /** Ballots-cast-over-time, bucketed across the voting window. */
+    public function turnoutTimeline(Request $request, Election $election, BallotTallyService $tally)
+    {
+        $buckets = (int) $request->query('buckets', 24);
+
+        return response()->json($tally->turnoutTimeline($election, $buckets));
+    }
+
     /** Verify the tamper-evident ballot chain. */
     public function verifyChain(ChainVerificationService $chain)
     {

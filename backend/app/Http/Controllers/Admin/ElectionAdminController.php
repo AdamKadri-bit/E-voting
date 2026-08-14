@@ -55,7 +55,7 @@ class ElectionAdminController extends Controller
     /** Update an election's core fields. */
     public function update(Request $request, Election $election)
     {
-        $data = $this->validateElection($request, $election);
+        $data = $this->validateElectionUpdate($request);
 
         $election->update($data);
 
@@ -135,7 +135,7 @@ class ElectionAdminController extends Controller
         ]);
     }
 
-    private function validateElection(Request $request, ?Election $election = null): array
+    private function validateElection(Request $request): array
     {
         return $request->validate([
             'type' => ['required', Rule::in(['parliamentary', 'municipal', 'other'])],
@@ -145,6 +145,24 @@ class ElectionAdminController extends Controller
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
+        ]);
+    }
+
+    /**
+     * Validation for updating core election fields. Deliberately excludes
+     * `status` — status transitions must go through updateStatus() so its
+     * activation guard (voting window + at least one constituency) can't be
+     * bypassed by editing the election directly.
+     */
+    private function validateElectionUpdate(Request $request): array
+    {
+        return $request->validate([
+            'type' => ['required', Rule::in(['parliamentary', 'municipal', 'other'])],
+            'law_ref' => ['nullable', 'string', 'max:50'],
+            'title' => ['required', 'string', 'max:200'],
+            'description' => ['nullable', 'string'],
+            'starts_at' => ['required', 'date'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
         ]);
     }
 }

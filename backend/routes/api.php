@@ -215,6 +215,7 @@ Route::middleware(['jwt.cookie', 'admin'])->prefix('admin')->group(function () {
 
     /* Results & audit */
     Route::get('/elections/{election}/results', [ResultsController::class, 'results']);
+    Route::get('/elections/{election}/turnout-timeline', [ResultsController::class, 'turnoutTimeline']);
     Route::get('/audit/logs', [ResultsController::class, 'auditLogs']);
     Route::get('/audit/chain', [ResultsController::class, 'verifyChain']);
 });

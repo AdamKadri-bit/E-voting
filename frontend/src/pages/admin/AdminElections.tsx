@@ -1,23 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Settings2, MapPin, ChevronRight, Play, Square, FileEdit } from "lucide-react";
+import { Plus, Settings2, MapPin, ChevronRight, Play, Square, FileEdit, Pencil } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import {
   adminListElections,
   adminGetElection,
   adminCreateElection,
+  adminUpdateElection,
   adminSetElectionStatus,
   adminListConstituencies,
   adminSyncConstituencies,
   type AdminElection,
   type AdminConstituency,
 } from "../../lib/api";
-
-const STATUS_COLORS: Record<string, string> = {
-  draft: "#94a3b8",
-  active: "#47a76f",
-  closed: "#e5a23b",
-};
+import { Card } from "../../components/common/Card";
+import { STATUS_COLORS } from "../../components/admin/statusColors";
 
 function StatusBadge({ status }: { status: string }) {
   const c = STATUS_COLORS[status] ?? "#94a3b8";
@@ -48,6 +45,45 @@ const emptyForm = {
   description: "",
 };
 
+type ElectionForm = typeof emptyForm;
+
+/** Converts an ISO datetime string to the "YYYY-MM-DDTHH:mm" shape a
+ * `datetime-local` input expects, in the browser's local timezone. */
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function makeField<T extends Record<string, any>>(
+  state: T,
+  setState: (s: T) => void
+) {
+  return (label: string, key: keyof T, type = "text", required = true) => (
+    <label key={String(key)} style={{ display: "grid", gap: 6 }}>
+      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-muted)" }}>
+        {label}
+      </span>
+      <input
+        className="govInput"
+        type={type}
+        required={required}
+        value={state[key] as any}
+        onChange={(e) => setState({ ...state, [key]: e.target.value })}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: "1px solid var(--gov-edge)",
+          background: "var(--gov-card2, rgba(255,255,255,0.03))",
+          color: "var(--gov-ink)",
+        }}
+      />
+    </label>
+  );
+}
+
 export default function AdminElections() {
   const nav = useNavigate();
   const [elections, setElections] = useState<AdminElection[]>([]);
@@ -61,6 +97,10 @@ export default function AdminElections() {
 
   const [editConstFor, setEditConstFor] = useState<number | null>(null);
   const [selectedConsts, setSelectedConsts] = useState<Set<number>>(new Set());
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<ElectionForm>({ ...emptyForm });
+  const [editSaving, setEditSaving] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -131,32 +171,38 @@ export default function AdminElections() {
     }
   }
 
-  const field = (
-    label: string,
-    key: keyof typeof form,
-    type = "text",
-    required = true
-  ) => (
-    <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-muted)" }}>
-        {label}
-      </span>
-      <input
-        className="govInput"
-        type={type}
-        required={required}
-        value={form[key]}
-        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: "1px solid var(--gov-edge)",
-          background: "var(--gov-card2, rgba(255,255,255,0.03))",
-          color: "var(--gov-ink)",
-        }}
-      />
-    </label>
-  );
+  function startEdit(el: AdminElection) {
+    setErr(null);
+    setEditingId(el.id);
+    setEditForm({
+      title: el.title,
+      type: el.type,
+      law_ref: el.law_ref ?? "",
+      starts_at: toDatetimeLocal(el.starts_at),
+      ends_at: toDatetimeLocal(el.ends_at),
+      description: el.description ?? "",
+    });
+  }
+
+  async function saveEdit(electionId: number) {
+    setEditSaving(true);
+    setErr(null);
+    try {
+      // Status is deliberately not sent here — status transitions go
+      // through setStatus()/adminSetElectionStatus so the activation guard
+      // (voting window + at least one constituency) can't be bypassed.
+      await adminUpdateElection(electionId, { ...editForm });
+      setEditingId(null);
+      await load();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  const field = makeField(form, setForm);
+  const editField = makeField(editForm, setEditForm);
 
   return (
     <AdminLayout title="Elections">
@@ -225,15 +271,7 @@ export default function AdminElections() {
       ) : (
         <div style={{ display: "grid", gap: 14 }}>
           {elections.map((el) => (
-            <div
-              key={el.id}
-              style={{
-                border: "1px solid var(--gov-edge)",
-                borderRadius: 16,
-                padding: 18,
-                background: "var(--gov-card)",
-              }}
-            >
+            <Card key={el.id}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -266,6 +304,9 @@ export default function AdminElections() {
                       <FileEdit size={14} /> Draft
                     </button>
                   )}
+                  <button className="govBtn" onClick={() => startEdit(el)} style={btn()}>
+                    <Pencil size={14} /> Edit
+                  </button>
                   <button className="govBtn" onClick={() => openConstEditor(el)} style={btn()}>
                     <MapPin size={14} /> Constituencies
                   </button>
@@ -274,6 +315,57 @@ export default function AdminElections() {
                   </button>
                 </div>
               </div>
+
+              {editingId === el.id && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    paddingTop: 14,
+                    borderTop: "1px solid var(--gov-edge)",
+                    display: "grid",
+                    gap: 14,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 800 }}>Edit election details</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    {editField("Title", "title")}
+                    {editField("Law reference", "law_ref", "text", false)}
+                    {editField("Starts at", "starts_at", "datetime-local")}
+                    {editField("Ends at", "ends_at", "datetime-local")}
+                  </div>
+                  <label style={{ display: "grid", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-muted)" }}>Type</span>
+                    <select
+                      value={editForm.type}
+                      onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: "1px solid var(--gov-edge)",
+                        background: "var(--gov-card2, rgba(255,255,255,0.03))",
+                        color: "var(--gov-ink)",
+                      }}
+                    >
+                      <option value="parliamentary">Parliamentary</option>
+                      <option value="municipal">Municipal</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      className="govBtn govBtnGold"
+                      disabled={editSaving}
+                      onClick={() => saveEdit(el.id)}
+                      style={{ padding: "8px 16px", fontWeight: 800 }}
+                    >
+                      {editSaving ? "Saving…" : "Save changes"}
+                    </button>
+                    <button className="govBtn" onClick={() => setEditingId(null)} style={{ padding: "8px 16px" }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {editConstFor === el.id && (
                 <div
@@ -335,7 +427,7 @@ export default function AdminElections() {
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
           {elections.length === 0 && (
             <div style={{ color: "var(--gov-muted)" }}>No elections yet. Create one above.</div>

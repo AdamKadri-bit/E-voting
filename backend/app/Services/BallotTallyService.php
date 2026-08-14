@@ -8,6 +8,7 @@ use App\Models\ElectionList;
 use App\Models\EncryptedBallot;
 use App\Models\ElectoralRollEntry;
 use App\Models\VoterElectionStatus;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -106,6 +107,8 @@ class BallotTallyService
                 'id' => $election->id,
                 'title' => $election->title,
                 'status' => $election->status,
+                'starts_at' => $election->starts_at,
+                'ends_at' => $election->ends_at,
             ],
             'turnout' => [
                 'registered' => $registered,
@@ -118,6 +121,71 @@ class BallotTallyService
             'lists' => $listResults,
             'preferential_candidates' => $candidateResults,
             'decode_errors' => $decodeErrors,
+        ];
+    }
+
+    /**
+     * Buckets cast ballots into evenly-sized time windows across an
+     * election's voting window, for a turnout-over-time chart. Only ever
+     * reads `cast_at` timestamps — never the encrypted payload — so ballot
+     * secrecy is preserved.
+     */
+    public function turnoutTimeline(Election $election, int $bucketCount = 24): array
+    {
+        $bucketCount = max(4, min(96, $bucketCount));
+
+        if (!$election->starts_at || !$election->ends_at) {
+            return [
+                'status' => 'not_started',
+                'window' => null,
+                'buckets' => [],
+                'total_ballots' => 0,
+            ];
+        }
+
+        $from = $election->starts_at;
+        $to = $election->status === 'closed'
+            ? $election->ends_at
+            : Carbon::now()->min($election->ends_at);
+
+        $fromTs = $from->getTimestamp();
+        $toTs = max($fromTs + 1, $to->getTimestamp());
+        $bucketSeconds = ($toTs - $fromTs) / $bucketCount;
+
+        $counts = array_fill(0, $bucketCount, 0);
+
+        EncryptedBallot::query()
+            ->where('election_id', $election->id)
+            ->pluck('cast_at')
+            ->each(function ($castAt) use (&$counts, $fromTs, $bucketSeconds, $bucketCount) {
+                if ($castAt === null) {
+                    return;
+                }
+                $offset = max(0, $castAt->getTimestamp() - $fromTs);
+                $index = max(0, min($bucketCount - 1, (int) floor($offset / $bucketSeconds)));
+                $counts[$index]++;
+            });
+
+        $buckets = [];
+        foreach ($counts as $index => $count) {
+            $buckets[] = [
+                'index' => $index,
+                'start' => Carbon::createFromTimestamp($fromTs + (int) round($index * $bucketSeconds))->toISOString(),
+                'end' => Carbon::createFromTimestamp($fromTs + (int) round(($index + 1) * $bucketSeconds))->toISOString(),
+                'count' => $count,
+            ];
+        }
+
+        return [
+            'status' => $election->status,
+            'window' => [
+                'from' => $from->toISOString(),
+                'to' => $to->toISOString(),
+                'bucket_seconds' => $bucketSeconds,
+                'bucket_count' => $bucketCount,
+            ],
+            'buckets' => $buckets,
+            'total_ballots' => array_sum($counts),
         ];
     }
 }
