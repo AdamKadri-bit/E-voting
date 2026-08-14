@@ -66,16 +66,20 @@ php artisan migrate --seed
 
 ```bash
 cd frontend
+cp .env.example .env
 npm ci
 ```
 
 ### Running it
 
-Backend on **8001** (the frontend's `VITE_API_URL` expects that port, and CORS
-allows the Vite origin on 5173):
+Two terminals. Backend first — `SERVER_PORT=8001` in `backend/.env` makes it
+bind the port `frontend/.env` expects, so no `--port` flag is needed. Without
+that variable `artisan serve` defaults to **8000** and every request from the
+frontend fails with `ERR_CONNECTION_REFUSED`:
 
 ```bash
-php backend/artisan serve --port=8001
+cd backend
+php artisan serve
 ```
 
 ```bash

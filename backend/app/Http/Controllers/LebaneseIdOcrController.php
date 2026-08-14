@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LebaneseIdOcrRequest;
 use App\Services\LebaneseIdOcrService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class LebaneseIdOcrController extends Controller
 {
@@ -31,10 +32,24 @@ class LebaneseIdOcrController extends Controller
             ], 422);
         }
 
-        $data = $service->extractFromImages(
-            $frontImage->getRealPath(),
-            $backImage->getRealPath()
-        );
+        try {
+            $data = $service->extractFromImages(
+                $frontImage->getRealPath(),
+                $backImage->getRealPath()
+            );
+        } catch (\Throwable $e) {
+            // The provider response can carry project identifiers and internal
+            // URLs, so it is logged server-side and never returned to the client.
+            Log::error('Lebanese ID OCR extraction failed', [
+                'user_id' => $auth->sub,
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'ID verification is temporarily unavailable. Please try again later.',
+            ], 503);
+        }
 
         return response()->json([
             'ok' => true,

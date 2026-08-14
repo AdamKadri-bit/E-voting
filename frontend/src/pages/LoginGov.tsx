@@ -72,7 +72,31 @@ export default function LoginGov() {
         return;
       }
 
-      navJump("/dashboard");
+      // The login response only sets the cookie; the role lives inside the JWT,
+      // so ask the server which panel this account belongs to.
+      const meRes = await fetch(`${API_URL}/me`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      const me = await meRes.json().catch(() => null);
+
+      if (me?.user?.role === "admin") {
+        // Administrator accounts are not admitted through the voter portal, so
+        // end the session that was just opened rather than leaving one behind.
+        await fetch(`${API_URL}/auth/logout`, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          credentials: "include",
+        }).catch(() => {});
+
+        setBannerErr(
+          "Administrator accounts cannot sign in here. Use the administrator portal."
+        );
+        return;
+      }
+
+      navJump("/dashboard", { replace: true });
     } catch (e: any) {
       setBannerErr(e?.message || "Sign in failed.");
     } finally {
