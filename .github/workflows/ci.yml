@@ -1,0 +1,68 @@
+name: CI
+
+# Runs on every PR and every push to main. The point of this workflow is to
+# catch environment drift *before* it reaches main: if someone regenerates
+# composer.lock on a different PHP version or with a different set of
+# extensions, `composer install` below fails and the PR goes red.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (PHP 8.3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # This version and extension list must stay in sync with backend/composer.json
+      # (config.platform.php, require.ext-*). That is deliberate: if they drift,
+      # this job fails and tells you.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sodium, pdo_sqlite, sqlite3, mbstring, dom, fileinfo, curl, xml
+          coverage: none
+
+      - name: composer.json and composer.lock agree
+        working-directory: backend
+        run: composer validate --no-check-publish
+
+      # install, never update - fails if the lock cannot be satisfied on PHP 8.3
+      - name: Install from lock file
+        working-directory: backend
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Installed packages run on this PHP
+        working-directory: backend
+        run: composer check-platform-reqs
+
+      - name: Tests
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test
+
+  frontend:
+    name: Frontend (Node 24)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install from lock file
+        working-directory: frontend
+        run: npm ci
+
+      # runs tsc -b then vite build
+      - name: Typecheck and build
+        working-directory: frontend
+        run: npm run build
