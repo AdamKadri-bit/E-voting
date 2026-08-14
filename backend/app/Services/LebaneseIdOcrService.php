@@ -21,7 +21,7 @@ class LebaneseIdOcrService
         $nationalIdNumber = $this->extractNationalIdNumber($frontText);
         $registryNumber = $this->extractRegistryNumber($backText);
 
-        return [
+        $data = [
             'full_name' => trim("$firstName $lastName"),
             'father_name' => $fatherName,
             'mother_name' => $motherName,
@@ -32,11 +32,18 @@ class LebaneseIdOcrService
             'governorate' => $this->extractField($backText, ['المحافظة', 'المحافظه', 'محافظة', 'محافظه']),
             'district' => $this->extractField($backText, ['القضاء', 'قضاء']),
             'locality' => $this->extractField($backText, ['القرية', 'القريه', 'قرية', 'قريه']),
-            'ocr_debug' => [
+        ];
+
+        // Raw OCR text reproduces the full contents of the ID card, so it is only
+        // exposed in local/debug environments and never in production responses.
+        if (config('app.debug')) {
+            $data['ocr_debug'] = [
                 'front_text' => $frontText,
                 'back_text' => $backText,
-            ],
-        ];
+            ];
+        }
+
+        return $data;
     }
 
     private function detectText(string $path): string
