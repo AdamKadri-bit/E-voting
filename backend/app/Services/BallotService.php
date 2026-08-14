@@ -103,7 +103,9 @@ class BallotService
             ],
             'constituency' => [
                 'id' => $constituency->id,
-                'name' => $constituency->name,
+                // The constituencies table stores bilingual names (name_en / name_ar);
+                // there is no plain `name` column, so it always came back null before.
+                'name' => $constituency->name_en ?? $constituency->name_ar,
             ],
             'lists' => $lists,
         ];

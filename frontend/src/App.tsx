@@ -10,22 +10,23 @@ import VerifyVotePage from "./pages/VerifyVotePage";
 import VoterVerificationPage from "./pages/VoterVerificationPage";
 import ProtectedRoute from "./pages/ProtectedRoute";
 
+import AdminRoute from "./pages/admin/AdminRoute";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminElections from "./pages/admin/AdminElections";
+import AdminElectionDetail from "./pages/admin/AdminElectionDetail";
+import AdminResults from "./pages/admin/AdminResults";
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/login" element={<LoginGov />} />
         <Route path="/signup" element={<SignupGov />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Dashboard is the main/landing page; it renders a guest view
+            (with Sign in / Sign up) when there is no active session. */}
+        <Route path="/dashboard" element={<Dashboard />} />
 
         <Route
           path="/verify-voter"
@@ -71,6 +72,15 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Admin panel (role-guarded on both client and server) */}
+        <Route path="/admin" element={<AdminRoute><AdminOverview /></AdminRoute>} />
+        <Route path="/admin/elections" element={<AdminRoute><AdminElections /></AdminRoute>} />
+        <Route
+          path="/admin/elections/:electionId"
+          element={<AdminRoute><AdminElectionDetail /></AdminRoute>}
+        />
+        <Route path="/admin/results" element={<AdminRoute><AdminResults /></AdminRoute>} />
       </Routes>
     </BrowserRouter>
   );

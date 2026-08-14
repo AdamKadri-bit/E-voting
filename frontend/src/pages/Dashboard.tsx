@@ -68,6 +68,9 @@ export default function Dashboard() {
   const [me, setMe] = useState<DbUser | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<"logout" | null>(null);
+  // The dashboard is the public landing page: guests see a welcome + auth buttons
+  // instead of being redirected away.
+  const [isGuest, setIsGuest] = useState(false);
 
   async function fetchMe() {
     setErr(null);
@@ -81,9 +84,12 @@ export default function Dashboard() {
       });
 
       if (res.status === 401 || res.status === 403) {
-        nav("/login", { replace: true });
+        setMe(null);
+        setIsGuest(true);
         return;
       }
+
+      setIsGuest(false);
 
       const j = (await res.json().catch(() => null)) as MeResponse | null;
 
@@ -297,6 +303,96 @@ export default function Dashboard() {
     nav(option.to);
   }
 
+  // Guest landing: shown when no valid session exists.
+  if (isGuest) {
+    return (
+      <DashboardLayout isGuest userEmail="Guest">
+        <div
+          style={{
+            maxWidth: 780,
+            margin: "0 auto",
+            padding: "64px 16px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              width: 64,
+              height: 64,
+              borderRadius: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(201,162,39,0.14)",
+              border: "1px solid rgba(201,162,39,0.35)",
+              color: "var(--gov-gold, #c9a227)",
+              marginBottom: 22,
+            }}
+          >
+            <ShieldCheck size={30} />
+          </div>
+
+          <h1 style={{ fontSize: 40, fontWeight: 900, margin: 0, lineHeight: 1.1 }}>
+            Your vote. Verifiable. Protected.
+          </h1>
+
+          <p
+            style={{
+              marginTop: 16,
+              color: "var(--gov-muted)",
+              fontSize: 16,
+              lineHeight: 1.7,
+            }}
+          >
+            Sign in to access your secure ballot, or create an account to get
+            started. Voting unlocks once your voter record is verified.
+          </p>
+
+          <div
+            style={{
+              marginTop: 30,
+              display: "flex",
+              gap: 12,
+              justifyContent: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              className="govBtn govBtnGold"
+              onClick={() => nav("/login")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "14px 22px",
+                fontSize: 15,
+                fontWeight: 900,
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className="govBtn"
+              onClick={() => nav("/signup")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "14px 22px",
+                fontSize: 15,
+                fontWeight: 900,
+              }}
+            >
+              Create account
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout
       userEmail={me?.email ?? (loading ? "Loading…" : "Unknown")}
@@ -304,6 +400,39 @@ export default function Dashboard() {
     >
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px" }}>
         {err && <div className="govError">{err}</div>}
+
+        {me?.role === "admin" && (
+          <button
+            type="button"
+            onClick={() => nav("/admin")}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              cursor: "pointer",
+              marginBottom: 20,
+              padding: "16px 18px",
+              borderRadius: 14,
+              border: "1px solid rgba(201,162,39,0.35)",
+              background: "rgba(201,162,39,0.12)",
+              color: "var(--gov-ink)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <ShieldCheck size={22} />
+              <span>
+                <span style={{ fontWeight: 900, display: "block" }}>Admin Panel</span>
+                <span style={{ fontSize: 13, color: "var(--gov-muted)" }}>
+                  Manage elections, lists, candidates, results and audit.
+                </span>
+              </span>
+            </span>
+            <ArrowRight size={18} />
+          </button>
+        )}
 
         <div style={{ marginBottom: 30 }}>
           <div
