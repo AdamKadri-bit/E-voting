@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { useGovTheme } from "../../ui/useGovTheme";
 import { Sun, Moon, TreePine, LogOut, ChevronDown, LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logout as apiLogout } from "../../lib/api";
 import BackButton from "../common/BackButton";
 
 type DashboardLayoutProps = {
@@ -16,13 +17,28 @@ type DashboardLayoutProps = {
 
 export default function DashboardLayout({
   userEmail = "user@example.com",
-  onLogout = () => {},
+  onLogout,
   isGuest = false,
   children,
 }: DashboardLayoutProps) {
   const { theme, toggle } = useGovTheme();
   const [showDropdown, setShowDropdown] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Pages that do not manage their own session state still need a working
+  // Sign out, so fall back to ending the session here rather than no-opping.
+  async function defaultLogout() {
+    try {
+      await apiLogout();
+    } catch {
+      // Network failure still clears the client-side session below.
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
+
+  const handleLogout = onLogout ?? defaultLogout;
 
   // The dashboard is the home page, so it never shows a Back button.
   const showBack = location.pathname !== "/dashboard";
@@ -125,7 +141,7 @@ export default function DashboardLayout({
                 >
                   <button
                     type="button"
-                    onClick={onLogout}
+                    onClick={handleLogout}
                     style={{
                       width: "100%",
                       textAlign: "left",

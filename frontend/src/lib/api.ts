@@ -52,6 +52,14 @@ export async function getMe() {
   return handle(res);
 }
 
+export async function logout() {
+  await fetch(`${API}/auth/logout`, {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    credentials: "include",
+  });
+}
+
 export async function extractLebaneseIdOcr(frontImage: File, backImage: File) {
   const formData = new FormData();
   formData.append("front_image", frontImage);
