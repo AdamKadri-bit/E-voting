@@ -72,7 +72,18 @@ export default function LoginGov() {
         return;
       }
 
-      navJump("/dashboard");
+      // The login response only sets the cookie; the role lives inside the JWT,
+      // so ask the server which panel this account belongs to.
+      const meRes = await fetch(`${API_URL}/me`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      const me = await meRes.json().catch(() => null);
+
+      navJump(me?.user?.role === "admin" ? "/admin" : "/dashboard", {
+        replace: true,
+      });
     } catch (e: any) {
       setBannerErr(e?.message || "Sign in failed.");
     } finally {

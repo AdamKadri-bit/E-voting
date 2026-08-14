@@ -49,7 +49,7 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  if (state === "guest") return <Navigate to="/login" replace />;
+  if (state === "guest") return <Navigate to="/admin/login" replace />;
   if (state === "notAdmin") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }

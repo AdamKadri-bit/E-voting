@@ -11,6 +11,7 @@ import VoterVerificationPage from "./pages/VoterVerificationPage";
 import ProtectedRoute from "./pages/ProtectedRoute";
 
 import AdminRoute from "./pages/admin/AdminRoute";
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminElections from "./pages/admin/AdminElections";
 import AdminElectionDetail from "./pages/admin/AdminElectionDetail";
@@ -74,6 +75,7 @@ export default function App() {
         />
 
         {/* Admin panel (role-guarded on both client and server) */}
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminOverview /></AdminRoute>} />
         <Route path="/admin/elections" element={<AdminRoute><AdminElections /></AdminRoute>} />
         <Route
