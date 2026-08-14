@@ -107,6 +107,10 @@ export default function Dashboard() {
 
       setMe(j.user);
     } catch (e: any) {
+      // Backend unreachable: we cannot prove a session, so fall back to the guest
+      // landing instead of rendering a signed-in shell with placeholder values.
+      setMe(null);
+      setIsGuest(true);
       setErr(e?.message || "Could not load your session.");
     } finally {
       setLoading(false);
