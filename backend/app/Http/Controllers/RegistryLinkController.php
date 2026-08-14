@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\RegistryRecordAlreadyClaimedException;
 use App\Http\Requests\LinkRegistryRequest;
 use App\Models\User;
 use App\Services\RegistryLinkingService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 
 class RegistryLinkController extends Controller
@@ -38,7 +40,25 @@ class RegistryLinkController extends Controller
             ], 422);
         }
 
-        $person = $service->linkUser($user, $request->validated());
+        try {
+            $person = $service->linkUser($user, $request->validated());
+        } catch (RegistryRecordAlreadyClaimedException) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'This voter registry record is already linked to another account.',
+            ], 409);
+        } catch (QueryException $e) {
+            // The unique index on users.registry_person_id is the last line of
+            // defence if two requests race past the check above.
+            if ($e->getCode() === '23000') {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'This voter registry record is already linked to another account.',
+                ], 409);
+            }
+
+            throw $e;
+        }
 
         if (!$person) {
             return response()->json([

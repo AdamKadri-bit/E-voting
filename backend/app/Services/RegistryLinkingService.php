@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\RegistryRecordAlreadyClaimedException;
 use App\Models\RegistryPerson;
 use App\Models\User;
 use Illuminate\Support\Str;
@@ -35,6 +36,15 @@ class RegistryLinkingService
 
         if (!$person) {
             return null;
+        }
+
+        // A registry record is one real person, so it may back only one account.
+        $claimed = User::where('registry_person_id', $person->id)
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($claimed) {
+            throw new RegistryRecordAlreadyClaimedException();
         }
 
         $user->registry_person_id = $person->id;

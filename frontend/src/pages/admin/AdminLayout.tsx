@@ -8,7 +8,6 @@ import {
   LogOut,
   Sun,
   Moon,
-  ArrowLeft,
 } from "lucide-react";
 import { useGovTheme } from "../../ui/useGovTheme";
 
@@ -120,21 +119,6 @@ export default function AdminLayout({
         ))}
 
         <div style={{ marginTop: "auto", display: "grid", gap: 6 }}>
-          <button
-            type="button"
-            className="govBtn"
-            onClick={() => nav("/dashboard")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 12px",
-              fontSize: 13,
-            }}
-          >
-            <ArrowLeft size={16} />
-            Voter dashboard
-          </button>
           <button
             type="button"
             className="govBtn"
