@@ -31,3 +31,7 @@ dist/
 # Secrets (never commit)
 /backend/google-credentials.json
 /backend/cacert.pem
+
+# Local agent/editor settings and generated data exports
+/.claude/
+/*-candidates.xlsx
