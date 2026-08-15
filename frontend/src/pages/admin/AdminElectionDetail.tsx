@@ -15,6 +15,7 @@ import {
   type AdminElection,
   type AdminConstituency,
 } from "../../lib/api";
+import { CandidateSheetImport } from "../../components/admin/CandidateSheetImport";
 
 export default function AdminElectionDetail() {
   const { electionId } = useParams();
@@ -59,15 +60,28 @@ export default function AdminElectionDetail() {
         <div style={{ color: "var(--gov-muted)" }}>Loading…</div>
       ) : !election ? (
         <div style={{ color: "var(--gov-muted)" }}>Election not found.</div>
-      ) : consts.length === 0 ? (
-        <div className="govError">
-          Attach at least one constituency to this election first (Elections →
-          Constituencies).
-        </div>
       ) : (
         <div style={{ display: "grid", gap: 24 }}>
-          <CandidacySection eid={eid} consts={consts} onChange={load} candidacies={candidacies} />
-          <ListsSection eid={eid} consts={consts} lists={lists} onChange={load} />
+          {/* Import comes first: it can attach constituencies itself, so it
+              works even on an election with nothing set up yet. */}
+          <CandidateSheetImport
+            electionId={eid}
+            electionStatus={election.status}
+            onImported={load}
+          />
+
+          {consts.length === 0 ? (
+            <div className="govError">
+              Attach at least one constituency to this election to add lists and
+              candidates by hand (Elections → Constituencies), or import a sheet
+              above.
+            </div>
+          ) : (
+            <>
+              <CandidacySection eid={eid} consts={consts} onChange={load} candidacies={candidacies} />
+              <ListsSection eid={eid} consts={consts} lists={lists} onChange={load} />
+            </>
+          )}
         </div>
       )}
     </AdminLayout>

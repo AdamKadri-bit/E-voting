@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\AuditLogService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -25,6 +26,45 @@ class Election extends Model
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
     ];
+
+    /**
+     * Closes every active election whose statutory voting window has run out.
+     *
+     * The law, not an administrator, decides when polling stops, so this is
+     * driven off `ends_at` alone. It runs on a schedule (elections:auto-close)
+     * and is also called when the admin panel reads election data, so the
+     * status is never stale just because the scheduler isn't running.
+     *
+     * @return int number of elections closed
+     */
+    public static function autoCloseExpired(): int
+    {
+        $expired = static::query()
+            ->where('status', 'active')
+            ->whereNotNull('ends_at')
+            ->where('ends_at', '<=', now())
+            ->get();
+
+        if ($expired->isEmpty()) {
+            return 0;
+        }
+
+        $audit = app(AuditLogService::class);
+
+        foreach ($expired as $election) {
+            $election->update(['status' => 'closed']);
+
+            // No actor: this transition is statutory, not an admin action.
+            $audit->log(null, 'election.auto_closed', [
+                'election_id' => $election->id,
+                'title' => $election->title,
+                'law_ref' => $election->law_ref,
+                'ends_at' => $election->ends_at?->toISOString(),
+            ]);
+        }
+
+        return $expired->count();
+    }
 
     public function lists(): HasMany
     {

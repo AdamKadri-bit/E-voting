@@ -6,6 +6,7 @@ import { Card } from "../components/common/Card";
 import {
   extractLebaneseIdOcr,
   linkRegistry,
+  getMe,
   type LebaneseIdOcrData,
   type RegistryLinkPayload,
 } from "../lib/api";
@@ -14,14 +15,72 @@ function normalizeDateForSubmit(value: string) {
   return value.replace(/\//g, "-").trim();
 }
 
-function buildRegistryPayload(data: LebaneseIdOcrData): RegistryLinkPayload {
+/** The fields the registry match needs; everything else is context only. */
+type RequiredField = "full_name" | "father_name" | "mother_name" | "date_of_birth";
+
+const REQUIRED_FIELDS: { key: RequiredField; label: string; type?: string }[] = [
+  { key: "full_name", label: "Full name" },
+  { key: "father_name", label: "Father name" },
+  { key: "mother_name", label: "Mother name" },
+  { key: "date_of_birth", label: "Date of birth", type: "date" },
+];
+
+type EditableForm = Record<RequiredField, string> & { civil_registry_number: string };
+
+function formFromExtraction(data: LebaneseIdOcrData): EditableForm {
   return {
-    full_name: data.full_name.trim(),
-    father_name: data.father_name.trim(),
-    mother_name: data.mother_name.trim(),
-    date_of_birth: normalizeDateForSubmit(data.date_of_birth),
-    civil_registry_number: data.civil_registry_number?.trim() || null,
+    full_name: (data.full_name ?? "").trim(),
+    father_name: (data.father_name ?? "").trim(),
+    mother_name: (data.mother_name ?? "").trim(),
+    date_of_birth: normalizeDateForSubmit(data.date_of_birth ?? ""),
+    civil_registry_number: (data.civil_registry_number ?? "").trim(),
   };
+}
+
+function buildRegistryPayload(form: EditableForm): RegistryLinkPayload {
+  return {
+    full_name: form.full_name.trim(),
+    father_name: form.father_name.trim(),
+    mother_name: form.mother_name.trim(),
+    date_of_birth: normalizeDateForSubmit(form.date_of_birth),
+    civil_registry_number: form.civil_registry_number.trim() || null,
+  };
+}
+
+/** Upload progress, so a slow phone upload doesn't look like a frozen page. */
+function UploadProgress({ percent, phase }: { percent: number; phase: string }) {
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+        <span style={{ fontWeight: 800, color: "var(--gov-ink)" }}>{phase}</span>
+        <span style={{ color: "var(--gov-muted)", fontVariantNumeric: "tabular-nums" }}>
+          {percent}%
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        style={{
+          height: 10,
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid var(--gov-edge)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${percent}%`,
+            height: "100%",
+            background: "var(--gov-gold, #c9a227)",
+            transition: "width 160ms ease",
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function FilePreview({
@@ -214,6 +273,68 @@ function UploadBox({
   );
 }
 
+/**
+ * A field the scan filled in and the person can correct. Blank required
+ * fields are flagged, because a blank one is exactly what the registry
+ * endpoint answers with a 422.
+ */
+function EditableField({
+  label,
+  value,
+  onChange,
+  missing,
+  disabled,
+  type = "text",
+  optional = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  missing: boolean;
+  disabled: boolean;
+  type?: string;
+  optional?: boolean;
+}) {
+  return (
+    <label
+      style={{
+        border: `1px solid ${missing ? "rgba(255,107,107,0.55)" : "var(--gov-edge)"}`,
+        borderRadius: 14,
+        padding: "10px 12px",
+        background: missing ? "rgba(255,107,107,0.07)" : "rgba(255,255,255,0.035)",
+        display: "grid",
+        gap: 6,
+      }}
+    >
+      <span style={{ fontSize: 12, color: "var(--gov-muted)" }}>
+        {label}
+        {optional && <span style={{ opacity: 0.7 }}> (optional)</span>}
+        {missing && (
+          <span style={{ color: "var(--gov-alert)", fontWeight: 800 }}> — not read</span>
+        )}
+      </span>
+      <input
+        dir="auto"
+        type={type}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={missing ? "Type it from the ID" : ""}
+        style={{
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          fontSize: 15,
+          fontWeight: 900,
+          color: "var(--gov-ink)",
+          width: "100%",
+          padding: 0,
+        }}
+      />
+    </label>
+  );
+}
+
 function ReadOnlyField({
   label,
   value,
@@ -256,17 +377,35 @@ export default function VoterVerificationPage() {
     null
   );
 
+  const [form, setForm] = useState<EditableForm | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [alreadyLinked, setAlreadyLinked] = useState(false);
 
   const busy = ocrLoading || verifying;
 
+  // An account can hold only one registry record. Finding that out here, on
+  // load, beats letting someone photograph their ID and only then be told —
+  // which is what the 422 from the link endpoint used to mean.
+  useEffect(() => {
+    getMe()
+      .then((res: any) => {
+        if (res?.user?.registry_person_id) setAlreadyLinked(true);
+      })
+      .catch(() => {
+        /* not fatal: the flow still works, it just can't warn early */
+      });
+  }, []);
+
   function resetExtraction() {
     setExtractedData(null);
+    setForm(null);
     setOk(null);
     setErr(null);
+    setProgress(null);
   }
 
   function handleFrontImage(file: File | null) {
@@ -299,20 +438,30 @@ export default function VoterVerificationPage() {
     }
 
     setOcrLoading(true);
+    setProgress(0);
 
     try {
-      const result = await extractLebaneseIdOcr(frontImage, backImage);
+      const result = await extractLebaneseIdOcr(frontImage, backImage, setProgress);
       setExtractedData(result.data);
+      setForm(formFromExtraction(result.data));
 
-      if (!result.data.civil_registry_number) {
+      const filled = formFromExtraction(result.data);
+      const missing = REQUIRED_FIELDS.filter((f) => !filled[f.key]).map((f) => f.label);
+
+      if (missing.length > 0) {
         setErr(
-          "OCR finished, but the registry number was not extracted. Remove the unclear image and upload a sharper one."
+          `The scan could not read: ${missing.join(", ")}. Fill those in below, or upload a sharper photo.`
+        );
+      } else if (!filled.civil_registry_number) {
+        setErr(
+          "The registry number was not read from the back of the ID. You can add it below, or upload a sharper photo."
         );
       }
     } catch (e: any) {
       setErr(e?.message || "Could not extract document information.");
     } finally {
       setOcrLoading(false);
+      setProgress(null);
     }
   }
 
@@ -320,21 +469,20 @@ export default function VoterVerificationPage() {
     setErr(null);
     setOk(null);
 
-    if (!extractedData) {
+    if (!form) {
       setErr("Extract the ID information first.");
       return;
     }
 
-    const payload = buildRegistryPayload(extractedData);
+    const payload = buildRegistryPayload(form);
 
-    if (
-      !payload.full_name ||
-      !payload.father_name ||
-      !payload.mother_name ||
-      !payload.date_of_birth ||
-      !payload.civil_registry_number
-    ) {
-      setErr("The extracted data is incomplete. Upload clearer images.");
+    // Name the fields that are still blank instead of refusing as a block —
+    // the server rejects the same set with a 422, so catching it here tells
+    // the person which box to fill.
+    const missing = REQUIRED_FIELDS.filter((f) => !payload[f.key]).map((f) => f.label);
+
+    if (missing.length > 0) {
+      setErr(`Still missing: ${missing.join(", ")}.`);
       return;
     }
 
@@ -432,6 +580,37 @@ export default function VoterVerificationPage() {
           </div>
         )}
 
+        {alreadyLinked && (
+          <div
+            style={{
+              color: "#47a76f",
+              background: "rgba(71,167,111,0.1)",
+              border: "1px solid rgba(71,167,111,0.28)",
+              borderRadius: 14,
+              padding: 14,
+              marginBottom: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontWeight: 800 }}>
+              This account is already linked to a voter registry record. There is
+              nothing left to verify.
+            </span>
+            <button
+              type="button"
+              className="govBtn"
+              onClick={() => nav("/dashboard", { replace: true })}
+              style={{ padding: "8px 14px", fontWeight: 800 }}
+            >
+              Back to dashboard
+            </button>
+          </div>
+        )}
+
         <Card>
           <div style={{ display: "grid", gap: 18 }}>
             <div
@@ -465,14 +644,14 @@ export default function VoterVerificationPage() {
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button
                 type="button"
-                disabled={busy || !frontImage || !backImage}
+                disabled={busy || alreadyLinked || !frontImage || !backImage}
                 onClick={handleExtract}
                 className="govBtn govBtnPrimary"
                 style={{
                   fontWeight: 900,
-                  opacity: busy || !frontImage || !backImage ? 0.55 : 1,
+                  opacity: busy || alreadyLinked || !frontImage || !backImage ? 0.55 : 1,
                   cursor:
-                    busy || !frontImage || !backImage
+                    busy || alreadyLinked || !frontImage || !backImage
                       ? "not-allowed"
                       : "pointer",
                 }}
@@ -480,6 +659,13 @@ export default function VoterVerificationPage() {
                 {ocrLoading ? "Reading document..." : "Extract information"}
               </button>
             </div>
+
+            {progress !== null && (
+              <UploadProgress
+                percent={progress}
+                phase={progress < 100 ? "Uploading images" : "Reading the document"}
+              />
+            )}
 
             {extractedData && (
               <div
@@ -508,8 +694,10 @@ export default function VoterVerificationPage() {
                       marginBottom: 0,
                     }}
                   >
-                    These fields are locked. If something is wrong, remove the
-                    image and upload a clearer one.
+                    Arabic script does not always survive a photograph. Correct
+                    anything the scan misread before verifying — the values still
+                    have to match the voter registry exactly, so a wrong entry
+                    simply fails to match.
                   </p>
                 </div>
 
@@ -520,13 +708,34 @@ export default function VoterVerificationPage() {
                     gap: 12,
                   }}
                 >
-                  <ReadOnlyField label="Full name" value={extractedData.full_name} />
-                  <ReadOnlyField label="Father name" value={extractedData.father_name} />
-                  <ReadOnlyField label="Mother name" value={extractedData.mother_name} />
-                  <ReadOnlyField label="Date of birth" value={extractedData.date_of_birth} />
+                  {form &&
+                    REQUIRED_FIELDS.map((field) => (
+                      <EditableField
+                        key={field.key}
+                        label={field.label}
+                        type={field.type}
+                        value={form[field.key]}
+                        missing={!form[field.key]}
+                        disabled={busy}
+                        onChange={(value) => setForm({ ...form, [field.key]: value })}
+                      />
+                    ))}
+
+                  {form && (
+                    <EditableField
+                      label="Registry number"
+                      value={form.civil_registry_number}
+                      missing={false}
+                      disabled={busy}
+                      optional
+                      onChange={(value) =>
+                        setForm({ ...form, civil_registry_number: value })
+                      }
+                    />
+                  )}
+
                   <ReadOnlyField label="Place of birth" value={extractedData.place_of_birth} />
                   <ReadOnlyField label="National ID number" value={extractedData.national_id_number} />
-                  <ReadOnlyField label="Registry number" value={extractedData.civil_registry_number} />
                   <ReadOnlyField label="Governorate" value={extractedData.governorate} />
                   <ReadOnlyField label="District" value={extractedData.district} />
                   <ReadOnlyField label="Locality" value={extractedData.locality} />
@@ -535,13 +744,13 @@ export default function VoterVerificationPage() {
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <button
                     type="button"
-                    disabled={busy}
+                    disabled={busy || alreadyLinked}
                     onClick={handleConfirmVerify}
                     className="govBtn govBtnPrimary"
                     style={{
                       fontWeight: 900,
-                      opacity: busy ? 0.55 : 1,
-                      cursor: busy ? "not-allowed" : "pointer",
+                      opacity: busy || alreadyLinked ? 0.55 : 1,
+                      cursor: busy || alreadyLinked ? "not-allowed" : "pointer",
                     }}
                   >
                     {verifying ? "Verifying..." : "Confirm and verify"}

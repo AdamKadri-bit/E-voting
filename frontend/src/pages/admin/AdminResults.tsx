@@ -7,18 +7,22 @@ import {
   adminAuditLogs,
   adminVerifyChain,
   adminTurnoutTimeline,
+  adminGeoResults,
   type AdminElection,
+  type GeoResults,
   type TurnoutTimeline,
 } from "../../lib/api";
 import { Card, Section, Metric } from "../../components/common/Card";
 import { ElectionStatusStepper, ElectionTimeProgress } from "../../components/admin/ElectionProgress";
 import { TurnoutTimelineChart } from "../../components/admin/TurnoutTimelineChart";
+import { LebanonResultsMap } from "../../components/admin/LebanonResultsMap";
 
 export default function AdminResults() {
   const [elections, setElections] = useState<AdminElection[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [results, setResults] = useState<any | null>(null);
   const [timeline, setTimeline] = useState<TurnoutTimeline | null>(null);
+  const [geo, setGeo] = useState<GeoResults | null>(null);
   const [chain, setChain] = useState<any | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -38,8 +42,10 @@ export default function AdminResults() {
     if (selected == null) return;
     setResults(null);
     setTimeline(null);
+    setGeo(null);
     adminResults(selected).then(setResults).catch((e) => setErr(e.message));
     adminTurnoutTimeline(selected).then(setTimeline).catch(() => {});
+    adminGeoResults(selected).then(setGeo).catch(() => {});
   }, [selected]);
 
   async function reverify() {
@@ -54,6 +60,36 @@ export default function AdminResults() {
   return (
     <AdminLayout title="Results & Audit">
       {err && <div className="govError" style={{ marginBottom: 14 }}>{err}</div>}
+
+      {/* Election picker — every panel below reports on the selected election. */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+        <select
+          value={selected ?? ""}
+          onChange={(e) => setSelected(Number(e.target.value))}
+          style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--gov-edge)", background: "var(--gov-card2, rgba(255,255,255,0.03))", color: "var(--gov-ink)" }}
+        >
+          {elections.map((el) => (
+            <option key={el.id} value={el.id}>{el.title}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Map of Lebanon: turnout and votes per governorate. */}
+      <div style={{ marginBottom: 20 }}>
+        <Card>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>Results by region</h2>
+            <span style={{ fontSize: 12, color: "var(--gov-muted)" }}>
+              Hover a governorate for its figures • click to pin the full breakdown
+            </span>
+          </div>
+          {geo ? (
+            <LebanonResultsMap data={geo} />
+          ) : (
+            <div style={{ color: "var(--gov-muted)" }}>Loading map…</div>
+          )}
+        </Card>
+      </div>
 
       {/* Chain integrity */}
       <div style={{ marginBottom: 20 }}>
@@ -83,17 +119,8 @@ export default function AdminResults() {
       {/* Results */}
       <div style={{ marginBottom: 20 }}>
         <Card>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>Results</h2>
-            <select
-              value={selected ?? ""}
-              onChange={(e) => setSelected(Number(e.target.value))}
-              style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--gov-edge)", background: "var(--gov-card2, rgba(255,255,255,0.03))", color: "var(--gov-ink)" }}
-            >
-              {elections.map((el) => (
-                <option key={el.id} value={el.id}>{el.title}</option>
-              ))}
-            </select>
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>Nationwide results</h2>
           </div>
 
           {!results ? (

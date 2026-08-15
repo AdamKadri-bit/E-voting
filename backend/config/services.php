@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    /*
+    | Google Cloud Vision, used by the Lebanese ID OCR scan. The key is a
+    | service-account JSON file that is never committed (see .gitignore), so
+    | each machine points at its own copy. Defaults to backend/google-credentials.json.
+    | Run `php artisan ocr:check` to verify a machine is set up.
+    */
+    'google_vision' => [
+        'credentials' => env('GOOGLE_APPLICATION_CREDENTIALS', base_path('google-credentials.json')),
+    ],
+
 ];

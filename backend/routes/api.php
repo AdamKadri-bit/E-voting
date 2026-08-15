@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\ElectionAdminController;
 use App\Http\Controllers\Admin\ListAdminController;
 use App\Http\Controllers\Admin\CandidateAdminController;
+use App\Http\Controllers\Admin\CandidateImportController;
 use App\Http\Controllers\Admin\ResultsController;
 
 Route::get('/ping', function () {
@@ -188,7 +189,9 @@ Route::get('/receipts/{receiptHash}', [ReceiptController::class, 'show']);
 
 Route::middleware(['jwt.cookie', 'admin'])->prefix('admin')->group(function () {
 
+    /* Overview: pick an election, then read its figures. */
     Route::get('/overview', [OverviewController::class, 'index']);
+    Route::get('/overview/elections/{election}', [OverviewController::class, 'show']);
 
     /* Elections */
     Route::get('/constituencies', [ElectionAdminController::class, 'constituencies']);
@@ -208,6 +211,12 @@ Route::middleware(['jwt.cookie', 'admin'])->prefix('admin')->group(function () {
     Route::post('/lists/{list}/candidates', [ListAdminController::class, 'addCandidate']);
     Route::delete('/lists/{list}/candidates/{listCandidate}', [ListAdminController::class, 'removeCandidate']);
 
+    /* Spreadsheet import (lists + candidates + membership in one sheet) */
+    Route::get('/elections/{election}/import/template', [CandidateImportController::class, 'template']);
+    Route::get('/elections/{election}/export', [CandidateImportController::class, 'export']);
+    Route::post('/elections/{election}/import/preview', [CandidateImportController::class, 'preview']);
+    Route::post('/elections/{election}/import', [CandidateImportController::class, 'store']);
+
     /* Candidacies */
     Route::get('/elections/{election}/candidacies', [CandidateAdminController::class, 'index']);
     Route::post('/elections/{election}/candidacies', [CandidateAdminController::class, 'store']);
@@ -215,6 +224,7 @@ Route::middleware(['jwt.cookie', 'admin'])->prefix('admin')->group(function () {
 
     /* Results & audit */
     Route::get('/elections/{election}/results', [ResultsController::class, 'results']);
+    Route::get('/elections/{election}/geo-results', [ResultsController::class, 'geoResults']);
     Route::get('/elections/{election}/turnout-timeline', [ResultsController::class, 'turnoutTimeline']);
     Route::get('/audit/logs', [ResultsController::class, 'auditLogs']);
     Route::get('/audit/chain', [ResultsController::class, 'verifyChain']);
