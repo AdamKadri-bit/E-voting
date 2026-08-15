@@ -12,10 +12,20 @@ async function handle<T = any>(res: Response): Promise<T> {
   const data = await parseJsonSafe(res);
 
   if (!res.ok) {
+    // A 422 carries per-field reasons in `errors`; without them the caller
+    // only ever sees Laravel's generic summary and the user is told nothing
+    // about which file was wrong or why.
+    const fieldErrors: string[] = data?.errors
+      ? Object.values(data.errors as Record<string, string[]>).flat()
+      : [];
+
     const message =
-      data?.message ||
-      data?.error ||
-      `Request failed with status ${res.status}`;
+      fieldErrors.length > 0
+        ? fieldErrors.join(" ")
+        : data?.message ||
+          data?.error ||
+          `Request failed with status ${res.status}`;
+
     throw new Error(message);
   }
 
@@ -60,19 +70,69 @@ export async function logout() {
   });
 }
 
-export async function extractLebaneseIdOcr(frontImage: File, backImage: File) {
+/**
+ * Uploads both ID sides for OCR.
+ *
+ * XMLHttpRequest rather than fetch: fetch cannot report upload progress, and
+ * ID photos are large enough on a phone connection that a silent wait looks
+ * like a hang.
+ */
+export function extractLebaneseIdOcr(
+  frontImage: File,
+  backImage: File,
+  onProgress?: (percent: number) => void
+): Promise<{ ok: boolean; data: LebaneseIdOcrData }> {
   const formData = new FormData();
   formData.append("front_image", frontImage);
   formData.append("back_image", backImage);
 
-  const res = await fetch(`${API}/ocr/lebanese-id`, {
-    method: "POST",
-    headers: { Accept: "application/json" },
-    credentials: "include",
-    body: formData,
-  });
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API}/ocr/lebanese-id`);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Accept", "application/json");
 
-  return handle<{ ok: boolean; data: LebaneseIdOcrData }>(res);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.(Math.round((event.loaded / event.total) * 100));
+      }
+    };
+
+    // Upload finished; the server is now running OCR, which takes a moment.
+    xhr.upload.onload = () => onProgress?.(100);
+
+    xhr.onload = () => {
+      let data: any = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* handled below */
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+        return;
+      }
+
+      const fieldErrors: string[] = data?.errors
+        ? Object.values(data.errors as Record<string, string[]>).flat()
+        : [];
+
+      reject(
+        new Error(
+          fieldErrors.length > 0
+            ? fieldErrors.join(" ")
+            : data?.message || `Request failed with status ${xhr.status}`
+        )
+      );
+    };
+
+    xhr.onerror = () =>
+      reject(new Error("The upload could not reach the server. Check that the backend is running."));
+    xhr.ontimeout = () => reject(new Error("The upload timed out. Try again."));
+
+    xhr.send(formData);
+  });
 }
 
 export async function linkRegistry(payload: RegistryLinkPayload) {
@@ -161,6 +221,19 @@ async function adminReq<T = any>(
   return handle<T>(res);
 }
 
+export type ReadinessCheck = {
+  key: string;
+  label: string;
+  passed: boolean;
+  detail: string;
+};
+
+export type ElectionReadiness = {
+  ready: boolean;
+  blockers: string[];
+  checks: ReadinessCheck[];
+};
+
 export type AdminElection = {
   id: number;
   type: string;
@@ -174,6 +247,9 @@ export type AdminElection = {
   constituencies_count?: number;
   encrypted_ballots_count?: number;
   constituencies?: AdminConstituency[];
+  readiness?: ElectionReadiness;
+  /** End of polling as the election law fixes it, for the current start time. */
+  statutory_ends_at?: string | null;
 };
 
 export type AdminConstituency = {
@@ -189,7 +265,8 @@ export type ElectionInput = {
   title: string;
   description?: string | null;
   starts_at: string;
-  ends_at: string;
+  /** Optional: left blank, the server derives the statutory close from the law. */
+  ends_at?: string | null;
   status: "draft" | "active" | "closed";
 };
 
@@ -197,8 +274,44 @@ export type ElectionInput = {
 // adminSetElectionStatus() so its activation guard can't be bypassed.
 export type ElectionUpdateInput = Omit<ElectionInput, "status">;
 
-// Overview
-export const adminOverview = () => adminReq("/overview");
+// Overview — election-scoped: list first, then the figures for one election.
+export type OverviewElection = Pick<
+  AdminElection,
+  "id" | "title" | "type" | "law_ref" | "status" | "starts_at" | "ends_at"
+> & {
+  lists_count?: number;
+  constituencies_count?: number;
+  encrypted_ballots_count?: number;
+};
+
+export type ElectionOverview = {
+  election: AdminElection & {
+    statutory_ends_at?: string | null;
+    statutory_law_ref?: string | null;
+  };
+  counts: {
+    constituencies: number;
+    lists: number;
+    candidacies: number;
+    candidacies_accepted: number;
+    candidacies_pending: number;
+    ballots: number;
+    registered_voters: number;
+  };
+  turnout: {
+    registered: number;
+    voted: number;
+    ballots_recorded: number;
+    turnout_percentage: number;
+  };
+  readiness: ElectionReadiness;
+  chain: { valid: boolean; verified_ballots: number; message?: string | null };
+};
+
+export const adminOverview = () =>
+  adminReq<{ elections: OverviewElection[] }>("/overview");
+export const adminElectionOverview = (electionId: number) =>
+  adminReq<ElectionOverview>(`/overview/elections/${electionId}`);
 
 // Elections
 export const adminListElections = () =>
@@ -256,9 +369,136 @@ export const adminCreateCandidacy = (
   }
 ) => adminReq(`/elections/${electionId}/candidacies`, "POST", payload);
 
+// Spreadsheet import
+export type ImportRow = {
+  line: number;
+  values: Record<string, string | number | null>;
+  errors: string[];
+};
+
+export type ImportPreview = {
+  headers: Record<string, string>;
+  missing_headers: string[];
+  rows: ImportRow[];
+  valid_rows: number;
+  invalid_rows: number;
+  errors: string[];
+  plan: {
+    lists: number;
+    candidates: number;
+    memberships: number;
+    constituencies_to_attach: number;
+  };
+};
+
+export type ImportResult = {
+  imported: {
+    constituencies_attached: number;
+    lists_created: number;
+    candidate_profiles_created: number;
+    candidacies_created: number;
+    memberships_created: number;
+    rows_processed: number;
+  };
+  preview: ImportPreview;
+};
+
+async function adminUpload<T>(path: string, file: File): Promise<T> {
+  const body = new FormData();
+  body.append("file", file);
+
+  const res = await fetch(`${API}/admin${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    body,
+  });
+
+  return handle<T>(res);
+}
+
+export const adminImportPreview = (electionId: number, file: File) =>
+  adminUpload<ImportPreview>(`/elections/${electionId}/import/preview`, file);
+export const adminImportCommit = (electionId: number, file: File) =>
+  adminUpload<ImportResult>(`/elections/${electionId}/import`, file);
+export const adminImportTemplateUrl = (electionId: number) =>
+  `${API}/admin/elections/${electionId}/import/template`;
+/** This election's current lists and candidates, in the importer's layout. */
+export const adminExportUrl = (electionId: number) =>
+  `${API}/admin/elections/${electionId}/export`;
+
 // Results & audit
 export const adminResults = (electionId: number) =>
   adminReq(`/elections/${electionId}/results`);
+
+export type GeoListResult = {
+  list_id?: number;
+  list_name: string;
+  votes: number;
+  percentage: number;
+};
+
+export type GeoCandidateResult = {
+  candidacy_id?: number;
+  candidate_name: string;
+  votes: number;
+  percentage: number;
+};
+
+export type GeoConstituency = {
+  id: number;
+  code?: string | null;
+  name_en?: string | null;
+  name_ar?: string | null;
+  seats: number;
+  /**
+   * False when this constituency shares a district with another one — the
+   * roll records districts only, so its headcounts can't be split out.
+   */
+  registration_attributable: boolean;
+  registered: number | null;
+  voted: number | null;
+  ballots: number;
+  turnout_percentage: number | null;
+  lists: GeoListResult[];
+  preferential_candidates: GeoCandidateResult[];
+};
+
+export type GeoGovernorate = {
+  id: number;
+  code: string;
+  name_en: string;
+  name_ar?: string | null;
+  districts: { id: number; code: string; name_en: string; name_ar?: string | null }[];
+  in_election: boolean;
+  registered: number;
+  voted: number;
+  ballots: number;
+  turnout_percentage: number;
+  lists: GeoListResult[];
+  preferential_candidates: GeoCandidateResult[];
+  constituencies: GeoConstituency[];
+};
+
+export type GeoResults = {
+  election: {
+    id: number;
+    title: string;
+    status: string;
+    starts_at?: string | null;
+    ends_at?: string | null;
+  };
+  totals: {
+    registered: number;
+    voted: number;
+    ballots: number;
+    turnout_percentage: number;
+  };
+  governorates: GeoGovernorate[];
+};
+
+export const adminGeoResults = (electionId: number) =>
+  adminReq<GeoResults>(`/elections/${electionId}/geo-results`);
 export type TurnoutTimeline = {
   status: string;
   window: {

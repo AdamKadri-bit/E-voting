@@ -6,8 +6,76 @@ use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 
 class LebaneseIdOcrService
 {
+    /**
+     * Where this machine keeps its Google Cloud service-account key. The file
+     * is never committed, so each developer points at their own copy — set
+     * GOOGLE_APPLICATION_CREDENTIALS to move it off the default path.
+     */
+    public static function credentialsPath(): string
+    {
+        return (string) config('services.google_vision.credentials');
+    }
+
+    /**
+     * Where `gcloud auth application-default login` leaves its credentials.
+     *
+     * This is the second way in, and the better one for a developer working
+     * against someone else's project: the login happens in their own browser
+     * and leaves no long-lived private key lying around to leak or commit.
+     */
+    public static function adcPath(): string
+    {
+        $home = getenv('HOME') ?: (getenv('USERPROFILE') ?: '');
+
+        return $home === '' ? '' : $home . '/.config/gcloud/application_default_credentials.json';
+    }
+
+    /** Which mechanism this machine will authenticate with, if any. */
+    public static function credentialSource(): ?string
+    {
+        $key = self::credentialsPath();
+
+        if ($key !== '' && is_readable($key)) {
+            return 'service_account_key';
+        }
+
+        $adc = self::adcPath();
+
+        if ($adc !== '' && is_readable($adc)) {
+            return 'application_default';
+        }
+
+        return null;
+    }
+
+    /** Whether this machine can run an OCR scan at all. */
+    public static function isConfigured(): bool
+    {
+        return self::credentialSource() !== null;
+    }
+
+    /**
+     * Options for the Vision client. A key file is passed explicitly; with
+     * application-default credentials the option is left out entirely so the
+     * library resolves them itself.
+     */
+    public static function clientOptions(): array
+    {
+        return self::credentialSource() === 'service_account_key'
+            ? ['credentials' => self::credentialsPath()]
+            : [];
+    }
+
     public function extractFromImages(string $frontImagePath, string $backImagePath): array
     {
+        if (!self::isConfigured()) {
+            throw new \RuntimeException(
+                'Google Cloud Vision has no credentials on this machine: no key file at '
+                . self::credentialsPath() . ' and no application-default login. '
+                . 'Run `php artisan ocr:check` for setup steps.'
+            );
+        }
+
         $frontText = $this->detectText($frontImagePath);
         $backText = $this->detectText($backImagePath);
 
@@ -48,9 +116,7 @@ class LebaneseIdOcrService
 
     private function detectText(string $path): string
     {
-        $client = new ImageAnnotatorClient([
-            'credentials' => base_path('google-credentials.json'),
-        ]);
+        $client = new ImageAnnotatorClient(self::clientOptions());
 
         try {
             $content = file_get_contents($path);
