@@ -6,39 +6,63 @@ use App\Http\Controllers\Controller;
 use App\Models\Constituency;
 use App\Models\Election;
 use App\Services\AuditLogService;
+use App\Services\ElectionLawService;
+use App\Services\ElectionReadinessService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ElectionAdminController extends Controller
 {
-    public function __construct(private AuditLogService $audit)
-    {
+    public function __construct(
+        private AuditLogService $audit,
+        private ElectionLawService $law,
+        private ElectionReadinessService $readiness,
+    ) {
     }
 
-    /** List all elections with summary counts. */
+    /** List all elections with summary counts and their activation readiness. */
     public function index()
     {
+        Election::autoCloseExpired();
+
         $elections = Election::query()
             ->withCount(['lists', 'constituencies', 'encryptedBallots'])
             ->orderByDesc('id')
             ->get();
 
-        return response()->json(['elections' => $elections]);
+        $payload = $elections->map(fn (Election $election) => array_merge(
+            $election->toArray(),
+            [
+                'readiness' => $this->readiness->evaluate($election),
+                'statutory_ends_at' => $this->law->statutoryEndFor($election)?->toISOString(),
+            ]
+        ));
+
+        return response()->json(['elections' => $payload]);
     }
 
     /** Show one election with its attached constituencies. */
     public function show(Election $election)
     {
+        Election::autoCloseExpired();
+        $election->refresh();
+
         $election->loadCount(['lists', 'encryptedBallots']);
         $election->load('constituencies:id,name_en,name_ar,code');
 
-        return response()->json(['election' => $election]);
+        return response()->json([
+            'election' => array_merge($election->toArray(), [
+                'readiness' => $this->readiness->evaluate($election),
+                'statutory_ends_at' => $this->law->statutoryEndFor($election)?->toISOString(),
+            ]),
+        ]);
     }
 
     /** Create a new election. */
     public function store(Request $request)
     {
         $data = $this->validateElection($request);
+        $data['ends_at'] = $this->resolveEndsAt($data);
 
         $election = Election::create($data);
 
@@ -56,6 +80,7 @@ class ElectionAdminController extends Controller
     public function update(Request $request, Election $election)
     {
         $data = $this->validateElectionUpdate($request);
+        $data['ends_at'] = $this->resolveEndsAt($data);
 
         $election->update($data);
 
@@ -76,17 +101,24 @@ class ElectionAdminController extends Controller
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
         ]);
 
-        // Guard: an election cannot go active without a voting window and at
-        // least one attached constituency (otherwise ballots can't be built).
+        // Guard: an incomplete election cannot open for voting. Without a
+        // window, constituencies, lists and candidates on those lists, voters
+        // would be handed an empty ballot.
         if ($data['status'] === 'active') {
-            if (!$election->starts_at || !$election->ends_at) {
+            $readiness = $this->readiness->evaluate($election);
+
+            if (!$readiness['ready']) {
                 return response()->json([
-                    'message' => 'Set a voting window before activating this election.',
+                    'message' => 'This election is incomplete and cannot be activated.',
+                    'blockers' => $readiness['blockers'],
+                    'readiness' => $readiness,
                 ], 422);
             }
-            if ($election->constituencies()->count() === 0) {
+
+            // Polling that is already past its statutory close can't be opened.
+            if ($election->ends_at->isPast()) {
                 return response()->json([
-                    'message' => 'Attach at least one constituency before activating.',
+                    'message' => 'The voting window has already ended; move it forward before activating.',
                 ], 422);
             }
         }
@@ -135,6 +167,22 @@ class ElectionAdminController extends Controller
         ]);
     }
 
+    /**
+     * The end of polling is fixed by law, so `ends_at` is optional: when it
+     * is left out we derive the statutory close from the start time and the
+     * election type. An explicitly supplied end is kept as given.
+     */
+    private function resolveEndsAt(array $data): string
+    {
+        if (!empty($data['ends_at'])) {
+            return $data['ends_at'];
+        }
+
+        return $this->law
+            ->statutoryEnd($data['type'], new \Illuminate\Support\Carbon($data['starts_at']))
+            ->toDateTimeString();
+    }
+
     private function validateElection(Request $request): array
     {
         return $request->validate([
@@ -143,7 +191,8 @@ class ElectionAdminController extends Controller
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
             'starts_at' => ['required', 'date'],
-            'ends_at' => ['required', 'date', 'after:starts_at'],
+            // Optional: falls back to the statutory close (see resolveEndsAt).
+            'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
         ]);
     }
@@ -162,7 +211,8 @@ class ElectionAdminController extends Controller
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
             'starts_at' => ['required', 'date'],
-            'ends_at' => ['required', 'date', 'after:starts_at'],
+            // Optional: falls back to the statutory close (see resolveEndsAt).
+            'ends_at' => ['nullable', 'date', 'after:starts_at'],
         ]);
     }
 }

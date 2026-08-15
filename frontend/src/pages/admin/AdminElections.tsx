@@ -128,7 +128,13 @@ export default function AdminElections() {
     setSaving(true);
     setErr(null);
     try {
-      await adminCreateElection({ ...form, status: "draft" });
+      // A blank end time is intentional: the server fills in the statutory
+      // close for the election's type (see ElectionLawService).
+      await adminCreateElection({
+        ...form,
+        ends_at: form.ends_at || null,
+        status: "draft",
+      });
       setForm({ ...emptyForm });
       setShowForm(false);
       await load();
@@ -191,7 +197,10 @@ export default function AdminElections() {
       // Status is deliberately not sent here — status transitions go
       // through setStatus()/adminSetElectionStatus so the activation guard
       // (voting window + at least one constituency) can't be bypassed.
-      await adminUpdateElection(electionId, { ...editForm });
+      await adminUpdateElection(electionId, {
+        ...editForm,
+        ends_at: editForm.ends_at || null,
+      });
       setEditingId(null);
       await load();
     } catch (e: any) {
@@ -235,7 +244,12 @@ export default function AdminElections() {
             {field("Title", "title")}
             {field("Law reference", "law_ref", "text", false)}
             {field("Starts at", "starts_at", "datetime-local")}
-            {field("Ends at", "ends_at", "datetime-local")}
+            {field("Ends at (leave blank to apply the law)", "ends_at", "datetime-local", false)}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--gov-muted)", marginTop: -6 }}>
+            Left blank, polling closes at the statutory hour for this election type —
+            19:00 on polling day for parliamentary (Law 44/2017) and municipal
+            (Law 665/1997) elections. The election closes itself at that moment.
           </div>
           <label style={{ display: "grid", gap: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-muted)" }}>Type</span>
@@ -286,11 +300,40 @@ export default function AdminElections() {
                     {el.constituencies_count ?? 0} constituencies • {el.lists_count ?? 0} lists •{" "}
                     {el.encrypted_ballots_count ?? 0} ballots
                   </div>
+                  {el.status !== "active" && el.readiness && !el.readiness.ready && (
+                    <ul
+                      style={{
+                        margin: "8px 0 0",
+                        paddingLeft: 18,
+                        fontSize: 12,
+                        color: "#e5a23b",
+                      }}
+                    >
+                      {el.readiness.blockers.map((blocker) => (
+                        <li key={blocker}>{blocker}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {el.status !== "active" && (
-                    <button className="govBtn" onClick={() => setStatus(el, "active")} style={btn("#47a76f")}>
+                    <button
+                      className="govBtn"
+                      onClick={() => setStatus(el, "active")}
+                      disabled={el.readiness ? !el.readiness.ready : false}
+                      title={
+                        el.readiness && !el.readiness.ready
+                          ? `Incomplete: ${el.readiness.blockers.join(" ")}`
+                          : "Open this election for voting"
+                      }
+                      style={{
+                        ...btn("#47a76f"),
+                        ...(el.readiness && !el.readiness.ready
+                          ? { opacity: 0.45, cursor: "not-allowed" }
+                          : {}),
+                      }}
+                    >
                       <Play size={14} /> Activate
                     </button>
                   )}
@@ -331,7 +374,7 @@ export default function AdminElections() {
                     {editField("Title", "title")}
                     {editField("Law reference", "law_ref", "text", false)}
                     {editField("Starts at", "starts_at", "datetime-local")}
-                    {editField("Ends at", "ends_at", "datetime-local")}
+                    {editField("Ends at (leave blank to apply the law)", "ends_at", "datetime-local", false)}
                   </div>
                   <label style={{ display: "grid", gap: 6 }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-muted)" }}>Type</span>
