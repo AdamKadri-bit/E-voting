@@ -23,7 +23,9 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: sodium, pdo_sqlite, sqlite3, mbstring, dom, fileinfo, curl, xml
+          # gd, zip, ctype, iconv, simplexml, xmlreader, xmlwriter and zlib are
+          # what phpoffice/phpspreadsheet requires for the candidate importer.
+          extensions: sodium, pdo_sqlite, sqlite3, mbstring, dom, fileinfo, curl, xml, gd, zip, ctype, iconv, simplexml, xmlreader, xmlwriter, zlib
           coverage: none
 
       - name: composer.json and composer.lock agree
