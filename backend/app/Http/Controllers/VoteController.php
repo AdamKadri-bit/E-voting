@@ -2,86 +2,76 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\VotingException;
 use App\Models\Election;
 use App\Models\User;
-use App\Services\AuditLogService;
-use App\Services\VoteCastingService;
+use App\Services\E2e\BallotCastService;
 use Illuminate\Http\Request;
-use RuntimeException;
 
+/**
+ * Casting and auditing encrypted ballots.
+ *
+ * The old plaintext endpoint (POST /elections/{id}/vote with a list_id) is
+ * retired: it let the server see every choice. It now answers 410 Gone.
+ */
 class VoteController extends Controller
 {
-    private VoteCastingService $voteCastingService;
-    private AuditLogService $auditLogService;
-
-    public function __construct(
-        VoteCastingService $voteCastingService,
-        AuditLogService $auditLogService
-    ) {
-        $this->voteCastingService = $voteCastingService;
-        $this->auditLogService = $auditLogService;
+    public function __construct(private BallotCastService $ballots)
+    {
     }
 
-    public function store(Request $request, $election)
+    public function legacy()
     {
-        $auth = $request->attributes->get('auth');
+        return response()->json([
+            'message' => 'Plaintext voting has been retired. Ballots are now encrypted in your browser — reload the ballot page.',
+            'reason' => 'legacy_endpoint',
+        ], 410);
+    }
 
-        if (!$auth || !isset($auth->sub)) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
-
-        $user = User::with('voter')->find($auth->sub);
-
+    public function cast(Request $request, Election $election)
+    {
+        $user = User::with('voter')->find($request->attributes->get('auth')->sub ?? null);
         if (!$user) {
             return response()->json(['message' => 'User not found'], 401);
         }
 
-        $validated = $request->validate([
-            'list_id' => ['required', 'integer'],
-            'preferential_candidacy_id' => ['nullable', 'integer'],
+        $data = $request->validate([
+            'ballot' => ['required', 'array'],
+            'ballot.election_id' => ['required', 'integer'],
+            'ballot.manifest_id' => ['required', 'integer'],
+            'ballot.manifest_hash' => ['required', 'string', 'size:64'],
+            'ballot.credential' => ['required', 'string', 'size:64'],
+            'ballot.ciphertexts' => ['required', 'array', 'max:400'],
+            'ballot.option_proofs' => ['required', 'array', 'max:400'],
+            'ballot.constraint_proofs' => ['required', 'array', 'max:400'],
         ]);
 
-        $electionModel = Election::findOrFail((int) $election);
+        try {
+            // The IP is used once, for an offline country lookup, and then dropped.
+            $result = $this->ballots->cast($user, $election, $data['ballot'], $request->ip());
+        } catch (VotingException $e) {
+            return response()->json(['message' => $e->getMessage(), 'reason' => $e->reason], $e->status);
+        }
+
+        return response()->json($result, 201);
+    }
+
+    /** Publishes a spoiled ballot. The frontend calls this without cookies, so it is not linked to a voter. */
+    public function audit(Request $request, Election $election)
+    {
+        $data = $request->validate([
+            'audit' => ['required', 'array'],
+            'audit.manifest_id' => ['required', 'integer'],
+            'audit.manifest_hash' => ['required', 'string', 'size:64'],
+            'audit.ciphertexts' => ['required', 'array', 'max:400'],
+            'audit.selections' => ['required', 'array', 'max:400'],
+            'audit.randomness' => ['required', 'array', 'max:400'],
+        ]);
 
         try {
-            $result = $this->voteCastingService->castVote(
-                $user,
-                $electionModel,
-                (int) $validated['list_id'],
-                isset($validated['preferential_candidacy_id'])
-                    ? (int) $validated['preferential_candidacy_id']
-                    : null
-            );
-
-            $this->auditLogService->log(
-                $user,
-                'vote.cast_success',
-                [
-                    'election_id' => $electionModel->id,
-                    'voter_id' => $user->voter?->id,
-                    'list_id' => (int) $validated['list_id'],
-                    'receipt_hash' => $result['receipt']['receipt_hash'] ?? null,
-                ],
-                $request
-            );
-
-            return response()->json($result, 201);
-        } catch (RuntimeException $e) {
-            $this->auditLogService->log(
-                $user,
-                'vote.cast_failed',
-                [
-                    'election_id' => $electionModel->id,
-                    'voter_id' => $user->voter?->id,
-                    'list_id' => (int) $validated['list_id'],
-                    'error' => $e->getMessage(),
-                ],
-                $request
-            );
-
-            return response()->json([
-                'message' => $e->getMessage(),
-            ], 409);
+            return response()->json($this->ballots->publishAudit($election, $data['audit']), 201);
+        } catch (VotingException $e) {
+            return response()->json(['message' => $e->getMessage(), 'reason' => $e->reason], $e->status);
         }
     }
 }

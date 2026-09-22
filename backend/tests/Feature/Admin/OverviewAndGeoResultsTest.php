@@ -52,7 +52,8 @@ class OverviewAndGeoResultsTest extends AdminTestCase
             'updated_at' => now(),
         ]);
 
-        $this->election = Election::factory()->create([
+        // These tests read legacy (server-key) ballots; e2e results have their own tests.
+        $this->election = Election::factory()->legacy()->create([
             'status' => 'active',
             'starts_at' => now()->subHour(),
             'ends_at' => now()->addHour(),

@@ -36,7 +36,8 @@ class TurnoutTimelineTest extends AdminTestCase
         $start = Carbon::parse('2026-01-01 00:00:00');
         $end = $start->copy()->addHours(4);
 
-        $election = Election::factory()->create([
+        // Legacy ballots carry cast_at; e2e ballots carry no time at all.
+        $election = Election::factory()->legacy()->create([
             'status' => 'active',
             'starts_at' => $start,
             'ends_at' => $end,

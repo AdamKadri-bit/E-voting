@@ -41,4 +41,23 @@ class ElectionFactory extends Factory
     {
         return $this->state(fn (array $attributes) => ['status' => 'closed']);
     }
+
+    /** An election on the previous (server-key) ballot system. */
+    public function legacy(): static
+    {
+        return $this->state(fn (array $attributes) => ['crypto_scheme' => 'legacy']);
+    }
+
+    /**
+     * Marks the key ceremony done with a throwaway key — for tests that only
+     * need the gate open. Tests of the ceremony itself run the real protocol.
+     */
+    public function keyed(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'crypto_scheme' => 'e2e',
+            'key_ceremony_status' => 'complete',
+            'joint_public_key' => bin2hex(\App\Crypto\Group::mulBase(\App\Crypto\Group::randomScalar())),
+        ]);
+    }
 }

@@ -20,8 +20,20 @@ use Illuminate\Support\Facades\Crypt;
  */
 class BallotTallyService
 {
+    public function __construct(private ?\App\Services\E2e\TallyService $e2e = null)
+    {
+        $this->e2e ??= app(\App\Services\E2e\TallyService::class);
+    }
+
     public function tally(Election $election): array
     {
+        // End-to-end elections: counts come only from the trustees' threshold
+        // decryption of the homomorphic tally — no ballot is ever opened, and
+        // nothing is shown before the tally is published.
+        if ($election->isE2e()) {
+            return $this->e2eTally($election);
+        }
+
         $ballots = EncryptedBallot::query()
             ->where('election_id', $election->id)
             ->get();
@@ -56,6 +68,34 @@ class BallotTallyService
 
         $totalBallots = $ballots->count();
 
+        return $this->present($election, $perList, $perCandidate, $totalBallots, $decodeErrors);
+    }
+
+    private function e2eTally(Election $election): array
+    {
+        $perList = [];
+        $perCandidate = [];
+        $total = 0;
+        foreach ($this->e2e->publishedTallies($election) as $row) {
+            $total += $row['ballots'];
+            foreach ($row['lists'] as $id => $n) {
+                $perList[$id] = ($perList[$id] ?? 0) + $n;
+            }
+            foreach ($row['candidates'] as $id => $n) {
+                $perCandidate[$id] = ($perCandidate[$id] ?? 0) + $n;
+            }
+        }
+
+        $out = $this->present($election, $perList, $perCandidate, $total, 0);
+        $out['results_available'] = $election->tally_status === 'published';
+        $out['crypto_scheme'] = 'e2e';
+        $out['tally_status'] = $election->tally_status;
+
+        return $out;
+    }
+
+    private function present(Election $election, array $perList, array $perCandidate, int $totalBallots, int $decodeErrors): array
+    {
         // Resolve list names.
         $lists = ElectionList::query()
             ->whereIn('id', array_keys($perList))
@@ -102,6 +142,10 @@ class BallotTallyService
             ->where('has_voted', true)
             ->count();
 
+        if ($election->isE2e()) {
+            $totalBallots = \App\Models\E2eBallot::where('election_id', $election->id)->where('status', 'counted')->count();
+        }
+
         return [
             'election' => [
                 'id' => $election->id,
@@ -121,6 +165,8 @@ class BallotTallyService
             'lists' => $listResults,
             'preferential_candidates' => $candidateResults,
             'decode_errors' => $decodeErrors,
+            'results_available' => true,
+            'crypto_scheme' => $election->crypto_scheme ?? 'legacy',
         ];
     }
 
@@ -154,9 +200,13 @@ class BallotTallyService
 
         $counts = array_fill(0, $bucketCount, 0);
 
-        EncryptedBallot::query()
-            ->where('election_id', $election->id)
-            ->pluck('cast_at')
+        // End-to-end ballots carry no timestamp at all; turnout over time comes
+        // from participation records, which are rounded to the hour.
+        $times = $election->isE2e()
+            ? \App\Models\ElectionParticipation::query()->where('election_id', $election->id)->pluck('coarse_timestamp')
+            : EncryptedBallot::query()->where('election_id', $election->id)->pluck('cast_at');
+
+        $times
             ->each(function ($castAt) use (&$counts, $fromTs, $bucketSeconds, $bucketCount) {
                 if ($castAt === null) {
                     return;

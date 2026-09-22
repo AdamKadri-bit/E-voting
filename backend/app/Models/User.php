@@ -26,6 +26,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'registry_person_id',
         'verification_status',
         'can_vote',
+        'voter_type',
+        'residence_country',
+        'voter_type_set_at',
     ];
 
     /**
@@ -47,6 +50,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'can_vote' => 'boolean',
+            'voter_type_set_at' => 'datetime',
         ];
     }
 
@@ -56,6 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function voter(): HasOne
     {
         return $this->hasOne(Voter::class);
+    }
+
+    public function webauthnCredentials(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(WebauthnCredential::class);
+    }
+
+    public function trusteeSeats(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ElectionTrustee::class);
     }
 
     /**

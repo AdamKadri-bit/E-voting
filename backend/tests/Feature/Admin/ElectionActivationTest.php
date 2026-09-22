@@ -10,10 +10,10 @@ use App\Models\ListCandidate;
 
 class ElectionActivationTest extends AdminTestCase
 {
-    /** Builds an election that passes every readiness check. */
+    /** Builds an election that passes every readiness check (key ceremony included). */
     private function completeElection(array $attributes = []): Election
     {
-        $election = Election::factory()->create(array_merge([
+        $election = Election::factory()->keyed()->create(array_merge([
             'status' => 'draft',
             'starts_at' => now()->addDay(),
             'ends_at' => now()->addDay()->addHours(12),
@@ -51,6 +51,44 @@ class ElectionActivationTest extends AdminTestCase
             ->assertOk();
 
         $this->assertDatabaseHas('elections', ['id' => $election->id, 'status' => 'active']);
+    }
+
+    public function test_election_without_a_key_ceremony_cannot_be_activated(): void
+    {
+        $this->loginAsAdmin();
+
+        $election = $this->completeElection(['key_ceremony_status' => 'pending', 'joint_public_key' => null]);
+
+        $response = $this->patchJson("/api/admin/elections/{$election->id}/status", ['status' => 'active']);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('key ceremony', implode(' ', $response->json('blockers')));
+        $this->assertDatabaseHas('elections', ['id' => $election->id, 'status' => 'draft']);
+    }
+
+    public function test_activation_freezes_the_ballot_styles(): void
+    {
+        $this->loginAsAdmin();
+
+        $election = $this->completeElection();
+        $district = \App\Models\District::create(['governorate_id' => \App\Models\Governorate::create(['code' => 'G', 'name_en' => 'G', 'name_ar' => 'G'])->id, 'code' => 'D', 'name_en' => 'D', 'name_ar' => 'D']);
+        \Illuminate\Support\Facades\DB::table('constituency_districts')->insert([
+            'constituency_id' => $election->constituencies()->first()->id, 'district_id' => $district->id,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->patchJson("/api/admin/elections/{$election->id}/status", ['status' => 'active'])->assertOk();
+
+        $this->assertDatabaseCount('ballot_manifests', 1);
+    }
+
+    public function test_legacy_election_needs_no_key_ceremony(): void
+    {
+        $this->loginAsAdmin();
+
+        $election = $this->completeElection(['crypto_scheme' => 'legacy', 'key_ceremony_status' => 'pending', 'joint_public_key' => null]);
+
+        $this->patchJson("/api/admin/elections/{$election->id}/status", ['status' => 'active'])->assertOk();
     }
 
     public function test_election_without_lists_cannot_be_activated(): void

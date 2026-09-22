@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Firebase\JWT\JWT;
+use App\Services\Auth\LoginThrottle;
+use App\Services\Auth\WebAuthnService;
 
 class AuthController extends Controller
 {
@@ -34,17 +36,33 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(Request $request)
+    public function login(Request $request, LoginThrottle $throttle, WebAuthnService $webauthn)
     {
         $data = $request->validate([
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
         ]);
+
+        // Account-level lockout with exponential backoff (the route also has a per-IP limit).
+        if ($wait = $throttle->lockedFor($data['email'])) {
+            return $this->lockedResponse($wait);
+        }
 
         $user = User::where('email', $data['email'])->first();
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            $locked = $throttle->fail($data['email']);
+
+            return $locked > 0
+                ? $this->lockedResponse($locked)
+                : response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        $throttle->succeed($data['email']);
+
+        // Keep stored hashes at the current cost as the work factor rises.
+        if (Hash::needsRehash($user->password)) {
+            $user->forceFill(['password' => Hash::make($data['password'])])->save();
         }
 
         if ($user->email_verified_at === null) {
@@ -53,6 +71,21 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // A registered passkey turns sign-in into two steps: no session until it is used.
+        if ($user->webauthnCredentials()->exists()) {
+            return response()->json([
+                'ok' => true,
+                'two_factor' => 'webauthn',
+                'challenge_token' => $webauthn->beginLogin($user),
+            ]);
+        }
+
+        return $this->issueSession($user);
+    }
+
+    /** Sets the JWT cookie — the single place a session is created. */
+    public function issueSession(User $user)
+    {
         $now = time();
         $ttlMinutes = (int) env('JWT_TTL_MINUTES', 15);
 
@@ -83,6 +116,16 @@ class AuthController extends Controller
         return response()->json([
             'ok' => true,
         ])->withCookie($cookie);
+    }
+
+    private function lockedResponse(int $seconds)
+    {
+        $minutes = max(1, (int) ceil($seconds / 60));
+
+        return response()->json([
+            'message' => "Too many failed sign-in attempts. Try again in {$minutes} minute(s).",
+            'retry_after' => $seconds,
+        ], 429)->header('Retry-After', (string) $seconds);
     }
 
     public function refresh(Request $request)
