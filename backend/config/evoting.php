@@ -45,6 +45,8 @@ return [
         'audit' => (int) env('EVOTE_RATE_AUDIT', 10),
         'board' => (int) env('EVOTE_RATE_BOARD', 120),
         'export' => (int) env('EVOTE_RATE_EXPORT', 20),
+        // Each scan is a paid Google Vision call.
+        'ocr' => (int) env('EVOTE_RATE_OCR', 10),
     ],
 
     /* Where the demo seeder writes the seeded trustees' key files. */

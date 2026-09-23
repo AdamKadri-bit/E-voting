@@ -89,7 +89,7 @@ export default function BoardPage() {
         </form>
 
         {summary && (
-          <div className="gv-split" style={{ marginBottom: 16 }}>
+          <div className="gv-stack" style={{ marginBottom: 16 }}>
             <div className="gv-card gv-stack">
               <div className="gv-grid-stats">
                 <div className="gv-stat"><div className="k">Cast (all versions)</div><div className="v">{summary.counts.cast}</div></div>
@@ -97,29 +97,48 @@ export default function BoardPage() {
                 <div className="gv-stat"><div className="k">Superseded</div><div className="v">{summary.counts.superseded}</div></div>
                 <div className="gv-stat"><div className="k">Audited</div><div className="v">{summary.counts.audited}</div></div>
               </div>
-              <div>
-                <div className="gv-row" style={{ gap: 6, fontWeight: 900 }}><KeyRound size={16} /> Election public key</div>
-                <div className="gv-mono gv-muted" style={{ fontSize: 12 }} data-testid="joint-key">{summary.election.joint_public_key ?? "not generated yet"}</div>
-              </div>
-              <div>
-                <div className="gv-row" style={{ gap: 6, fontWeight: 900 }}><Package size={16} /> Client crypto bundle (SHA-256)</div>
-                <div className="gv-mono gv-muted" style={{ fontSize: 12 }}>
-                  {summary.client_bundle ? `${summary.client_bundle.file} · ${summary.client_bundle.sha256}` : "not recorded — run scripts/reproducible-build.sh"}
-                </div>
-                <div className="gv-muted" style={{ fontSize: 12 }}>Rebuild the app yourself and compare this hash to be sure the encryption code you ran is the published one.</div>
+              <div className="gv-row">
+                <Link className="gv-btn blue" to={`/verify?election=${eid}`}><ShieldCheck size={16} /> Verify this election</Link>
+                <span className="gv-muted" style={{ fontSize: 13 }}>Tally: {summary.tally.status}</span>
               </div>
             </div>
-            <div className="gv-card gv-stack">
-              <div style={{ fontWeight: 900 }}>Trustees ({summary.election.threshold} of {summary.election.trustee_count} needed to decrypt)</div>
-              {summary.trustees.map((t) => (
-                <div key={t.trustee_index} style={{ borderTop: "1px solid var(--gov-edge)", paddingTop: 8 }}>
-                  <div style={{ fontWeight: 800 }}>#{t.trustee_index} {t.name}</div>
-                  <div className="gv-mono gv-muted" style={{ fontSize: 11 }}>share key {t.share_public_key ?? "pending"}</div>
+
+            {/*
+              Key material, trustees and the client-code hash matter to auditors,
+              not to voters, so they sit collapsed (open for admins and trustees).
+              They stay in the public board export — the verifier needs them.
+            */}
+            <details className="gv-card" open={me?.role === "admin" || !!me?.is_trustee} data-testid="technical-details">
+              <summary style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", gap: 8, fontWeight: 900 }}>
+                <KeyRound size={16} /> Technical details for auditors
+                <span className="gv-muted" style={{ fontWeight: 500, fontSize: 13 }}>— election key, trustees, client code hash</span>
+              </summary>
+              <div className="gv-split" style={{ marginTop: 12 }}>
+                <div className="gv-stack">
+                  <div>
+                    <div className="gv-row" style={{ gap: 6, fontWeight: 900 }}><KeyRound size={16} /> Election public key</div>
+                    <div className="gv-mono gv-muted" style={{ fontSize: 12 }} data-testid="joint-key">{summary.election.joint_public_key ?? "not generated yet"}</div>
+                  </div>
+                  <div>
+                    <div className="gv-row" style={{ gap: 6, fontWeight: 900 }}><Package size={16} /> Client crypto bundle (SHA-256)</div>
+                    <div className="gv-mono gv-muted" style={{ fontSize: 12 }}>
+                      {summary.client_bundle ? `${summary.client_bundle.file} · ${summary.client_bundle.sha256}` : "not recorded — run scripts/reproducible-build.sh"}
+                    </div>
+                    <div className="gv-muted" style={{ fontSize: 12 }}>Rebuild the app yourself and compare this hash to be sure the encryption code you ran is the published one.</div>
+                  </div>
                 </div>
-              ))}
-              <div className="gv-muted" style={{ fontSize: 13 }}>Tally: {summary.tally.status}{summary.tally.used_trustees.length ? ` · decrypted by trustees ${summary.tally.used_trustees.join(", ")}` : ""}</div>
-              <Link className="gv-btn blue" to={`/verify?election=${eid}`}><ShieldCheck size={16} /> Verify this election</Link>
-            </div>
+                <div className="gv-stack" style={{ gap: 8 }}>
+                  <div style={{ fontWeight: 900 }}>Trustees ({summary.election.threshold} of {summary.election.trustee_count} needed to decrypt)</div>
+                  {summary.trustees.map((t) => (
+                    <div key={t.trustee_index} style={{ borderTop: "1px solid var(--gov-edge)", paddingTop: 8 }}>
+                      <div style={{ fontWeight: 800 }}>#{t.trustee_index} {t.name}</div>
+                      <div className="gv-mono gv-muted" style={{ fontSize: 11 }}>share key {t.share_public_key ?? "pending"}</div>
+                    </div>
+                  ))}
+                  {summary.tally.used_trustees.length > 0 && <div className="gv-muted" style={{ fontSize: 13 }}>Decrypted by trustees {summary.tally.used_trustees.join(", ")}</div>}
+                </div>
+              </div>
+            </details>
           </div>
         )}
 

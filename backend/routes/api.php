@@ -204,7 +204,12 @@ Route::middleware('jwt.cookie')->group(function () {
     /*
     | OCR Lebanese ID (front + back)
     */
-    Route::post('/ocr/lebanese-id', [LebaneseIdOcrController::class, 'extract']);
+    Route::post('/ocr/lebanese-id', [LebaneseIdOcrController::class, 'extract'])->middleware('throttle:ocr');
+
+    /*
+    | OCR any accepted identity document: national ID, ikhraj qayd, passport
+    */
+    Route::post('/ocr/document', [\App\Http\Controllers\IdentityDocumentOcrController::class, 'extract'])->middleware('throttle:ocr');
 
     /*
     | Link voter registry record

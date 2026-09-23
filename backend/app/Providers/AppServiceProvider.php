@@ -16,6 +16,9 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Geo\GeoIpResolver::class,
             fn () => new \App\Services\Geo\MaxMindGeoIpResolver((string) config('evoting.geoip_path'))
         );
+
+        // Document OCR (ikhraj qayd, passport) through Google Cloud Vision.
+        $this->app->bind(\App\Services\Ocr\TextReader::class, \App\Services\Ocr\VisionTextReader::class);
     }
 
     /**
@@ -24,7 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Named per-IP limiters for auth and voting endpoints (see config/evoting.php).
-        foreach (['login', 'register', 'ballot', 'audit', 'board', 'export'] as $name) {
+        foreach (['login', 'register', 'ballot', 'audit', 'board', 'export', 'ocr'] as $name) {
             \Illuminate\Support\Facades\RateLimiter::for($name, fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute((int) config("evoting.rate_limits.{$name}"))->by($name . '|' . $request->ip()));
         }
     }

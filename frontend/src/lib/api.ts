@@ -140,6 +140,60 @@ export function extractLebaneseIdOcr(
   });
 }
 
+export type IdentityDocumentType = "national_id" | "ikhraj_qayd" | "passport";
+
+export type IdentityDocumentResult = {
+  ok: boolean;
+  document_type: IdentityDocumentType;
+  data: LebaneseIdOcrData & { passport_number?: string; nationality?: string; expiry_date?: string };
+  missing: string[];
+  warnings: string[];
+};
+
+/**
+ * Scans any accepted identity document (national ID front+back, ikhraj qayd
+ * page, or passport photo page). XHR for upload progress, as above.
+ */
+export function extractIdentityDocument(
+  documentType: IdentityDocumentType,
+  frontImage: File,
+  backImage: File | null,
+  onProgress?: (percent: number) => void
+): Promise<IdentityDocumentResult> {
+  const formData = new FormData();
+  formData.append("document_type", documentType);
+  formData.append("front_image", frontImage);
+  if (backImage) formData.append("back_image", backImage);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API}/ocr/document`);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.upload.onload = () => onProgress?.(100);
+    xhr.onload = () => {
+      let data: any = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* handled below */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data);
+        return;
+      }
+      const fieldErrors: string[] = data?.errors ? Object.values(data.errors as Record<string, string[]>).flat() : [];
+      reject(new Error(fieldErrors.length > 0 ? fieldErrors.join(" ") : data?.message || `Request failed with status ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("The upload could not reach the server. Check that the backend is running."));
+    xhr.ontimeout = () => reject(new Error("The upload timed out. Try again."));
+    xhr.send(formData);
+  });
+}
+
 export async function linkRegistry(payload: RegistryLinkPayload) {
   const res = await fetch(`${API}/registry/link`, {
     method: "POST",
