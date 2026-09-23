@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import type { Manifest, ManifestConstraint, ManifestOption } from "../src/crypto/manifest";
 
 /**
  * Crypto performance on a throttled CPU (Chrome DevTools 4× slowdown, the
@@ -27,7 +28,7 @@ test("ballot encryption + proofs under 4x CPU throttling", async ({ page, browse
     const pk = pointToHex(mulBase(randomScalar()));
 
     function manifest(lists: number, cands: number) {
-      const options: any[] = [];
+      const options: ManifestOption[] = [];
       for (let l = 0; l < lists; l++) options.push({ type: "list", id: 100 + l, list_id: null, label: `List ${l}` });
       const byList: number[][] = [];
       for (let l = 0; l < lists; l++) {
@@ -37,20 +38,20 @@ test("ballot encryption + proofs under 4x CPU throttling", async ({ page, browse
           options.push({ type: "candidate", id: 1000 + l * 100 + c, list_id: 100 + l, label: `C${l}.${c}` });
         }
       }
-      const constraints: any[] = [{ type: "exact", value: 1, indices: [...Array(lists).keys()], parent: null }];
+      const constraints: ManifestConstraint[] = [{ type: "exact", value: 1, indices: [...Array(lists).keys()], parent: null }];
       if (cands) constraints.push({ type: "max", value: 1, indices: byList.flat(), parent: null });
       byList.forEach((idx, l) => idx.length && constraints.push({ type: "implies", value: 1, indices: idx, parent: l }));
-      const m: any = { id: 1, election_id: 1, constituency_id: 1, district_id: 1, options, constraints };
+      const m = { id: 1, election_id: 1, constituency_id: 1, district_id: 1, options, constraints, hash: "" } as Manifest;
       m.hash = manifestHash(m);
       return m;
     }
 
-    const out: Record<string, any> = {};
+    const out: Record<string, unknown> = {};
     await runCrypto("warmup");
     encryptBallot(manifest(2, 1), pk, "warm", [1, 0, 0, 0]);
     for (const [name, lists, cands] of [["demo-ballot-3x2", 3, 2], ["large-ballot-11x8", 11, 8]] as const) {
       const m = manifest(lists, cands);
-      const sel = m.options.map((o: any, i: number) => (i === 0 || (o.type === "candidate" && o.list_id === 100 && o.id === 1000) ? 1 : 0));
+      const sel = m.options.map((o, i) => (i === 0 || (o.type === "candidate" && o.list_id === 100 && o.id === 1000) ? 1 : 0));
       const throttled: number[] = [];
       const worker: number[] = [];
       for (let r = 0; r < 3; r++) {
@@ -83,7 +84,7 @@ test("ballot encryption + proofs under 4x CPU throttling", async ({ page, browse
       if (running) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    await runCrypto("encryptBallot", { manifest: m, jointPk: pk, credential: "perf", selections: m.options.map((_: any, i: number) => (i === 0 ? 1 : 0)) });
+    await runCrypto("encryptBallot", { manifest: m, jointPk: pk, credential: "perf", selections: m.options.map((_, i) => (i === 0 ? 1 : 0)) });
     running = false;
     out.main_thread_longest_frame_gap_ms = Math.round(worst);
     return out;

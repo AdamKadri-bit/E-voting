@@ -10,6 +10,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { feature } from "topojson-client";
+import type { FeatureCollection, Geometry, Position } from "geojson";
+import type { GeometryCollection, Topology } from "topojson-specification";
 
 const require = createRequire(import.meta.url);
 const countries = require("i18n-iso-countries");
@@ -34,12 +36,17 @@ const out = (p: string, data: unknown) => {
 out(resolve(here, "../src/data/countries.json"), list);
 out(resolve(here, "../../backend/resources/data/countries.json"), list);
 
-const topo = JSON.parse(readFileSync(require.resolve("world-atlas/countries-110m.json"), "utf8"));
-const geo: any = feature(topo, topo.objects.countries);
+const topo = JSON.parse(readFileSync(require.resolve("world-atlas/countries-110m.json"), "utf8")) as Topology<{ countries: GeometryCollection }>;
+const geo = feature(topo, topo.objects.countries) as FeatureCollection<Geometry>;
 const byNumeric = new Map(list.map((c) => [c.numeric, c.code]));
-const round = (x: any): any => (Array.isArray(x) ? x.map(round) : Math.round(x * 100) / 100);
+type Coords = number | Coords[];
+const round = (x: Coords): Coords => (Array.isArray(x) ? x.map(round) : Math.round(x * 100) / 100);
 const features = geo.features
-  .map((f: any) => ({ code: byNumeric.get(String(f.id).padStart(3, "0")) ?? null, type: f.geometry?.type, coordinates: round(f.geometry?.coordinates ?? []) }))
-  .filter((f: any) => f.type);
+  .map((f) => ({
+    code: byNumeric.get(String(f.id).padStart(3, "0")) ?? null,
+    type: f.geometry?.type,
+    coordinates: round(f.geometry && "coordinates" in f.geometry ? (f.geometry.coordinates as Position[] as Coords) : []),
+  }))
+  .filter((f) => f.type);
 out(resolve(here, "../../backend/resources/data/world-110m.geo.json"), features);
-console.log("features", features.length, "unmapped", features.filter((f: any) => !f.code).length, "LB?", features.some((f: any) => f.code === "LB"));
+console.log("features", features.length, "unmapped", features.filter((f) => !f.code).length, "LB?", features.some((f) => f.code === "LB"));

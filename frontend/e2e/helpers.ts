@@ -14,8 +14,13 @@ export function artisan(cmd: string): string {
 export async function shot(page: Page, info: TestInfo, name: string) {
   const dir = resolve(import.meta.dirname, "../../docs/screenshots", info.project.name);
   mkdirSync(dir, { recursive: true });
+  // Full-page captures keep fixed and sticky bars where the viewport was, so scroll to the
+  // top and let the bottom action bars sit in the page flow while the picture is taken.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const flow = await page.addStyleTag({ content: ".gv-sticky-actions { position: static !important; }" });
   await page.waitForTimeout(150);
   await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
+  await flow.evaluate((el) => el.remove());
 }
 
 /** No sideways page scroll: the document never grows wider than the viewport. */
@@ -67,7 +72,7 @@ export async function apiAdmin(request: APIRequestContext) {
 
 export async function electionId(request: APIRequestContext, titleStart: string): Promise<number> {
   const r = await request.get(`${API}/board/elections`);
-  const e = (await r.json()).elections.find((x: any) => x.title.startsWith(titleStart));
+  const e = (await r.json()).elections.find((x: { title: string }) => x.title.startsWith(titleStart));
   expect(e, `election "${titleStart}"`).toBeTruthy();
   return e.id;
 }
