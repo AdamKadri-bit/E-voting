@@ -148,8 +148,10 @@ export default function Dashboard() {
   }, []);
 
   const emailVerified = !!me?.email_verified_at || !!me?.email_verified;
-  const registryLinked = !!me?.registry_person_id || !!me?.has_voter_profile;
-  const canVote = !!me?.can_vote || !!me?.has_voter_profile;
+  // Registry linking (ID scan / OCR on /verify-voter) is what unlocks voting,
+  // for residents and diaspora voters alike.
+  const registryLinked = !!me?.registry_person_id;
+  const canVote = !!me?.can_vote;
   const status = me?.voter_status;
   const statusLabel = status?.voter_type === "diaspora" ? `Diaspora · ${status.residence_country_name ?? ""}` : status?.voter_type === "resident" ? "Resident" : "Not set";
 
@@ -257,6 +259,17 @@ export default function Dashboard() {
           to: "/board",
           cta: "Open board",
         },
+        ...(me?.role === "voter"
+          ? [{
+              icon: <UserCheck size={28} />,
+              title: `Voter status: ${statusLabel}`,
+              description: "Resident or diaspora, and your passkeys for sign-in.",
+              color: "#8b5cf6",
+              enabled: true,
+              to: "/profile",
+              cta: "Open profile",
+            }]
+          : []),
       ];
 
   const howItWorks = registryLinked

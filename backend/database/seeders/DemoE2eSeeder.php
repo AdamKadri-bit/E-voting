@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Hash;
  *   officer@evoting.local / Admin123!         election officer, trustee 3
  *   resident@evoting.local / Password123!     resident voter (Chouf), hasn't voted in the open election
  *   diaspora@evoting.local / Password123!     diaspora voter in France (Aley), hasn't voted yet
- *   newvoter@evoting.local / Password123!     voter who hasn't chosen resident/diaspora yet
+ *   newvoter@evoting.local / Password123!     voter who hasn't chosen resident/diaspora yet and
+ *                                             hasn't linked the voter registry (ID scan / OCR) yet
  *
  * Seeded demo trustee key files (passphrase "demo trustee passphrase") are
  * written to storage/app/demo-trustee-keyfiles/ so the decryption ceremony can
@@ -102,7 +103,8 @@ class DemoE2eSeeder extends Seeder
         /* Demo login accounts. */
         $b->voter('resident@evoting.local', 'Samir Resident', $chouf, 'resident', null, $all);
         $b->voter('diaspora@evoting.local', 'Nadia Diaspora', $aley, 'diaspora', 'FR', $all);
-        $b->voter('newvoter@evoting.local', 'Walid Newvoter', $keserwan, null, null, $all);
+        // Not yet linked to the voter registry: shows the ID-scan / OCR step (/verify-voter).
+        $b->voter('newvoter@evoting.local', 'Walid Newvoter', $keserwan, null, null, $all, 'Password123!', false);
 
         /* Crowd: residents and diaspora in 14 countries, non-voters, mismatches, re-votes, audits. */
         $lists = fn (Election $e) => DB::table('lists')->where('election_id', $e->id)->get(['id', 'constituency_id'])->groupBy('constituency_id');

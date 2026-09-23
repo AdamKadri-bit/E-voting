@@ -15,6 +15,7 @@ use App\Models\ElectionParticipation;
 use App\Models\ElectionTrustee;
 use App\Models\ElectoralRollEntry;
 use App\Models\ListCandidate;
+use App\Models\RegistryPerson;
 use App\Models\User;
 use App\Models\Voter;
 use App\Services\E2e\BallotCastService;
@@ -134,7 +135,12 @@ class DemoElectionBuilder
         return $election->fresh();
     }
 
-    public function voter(string $email, string $name, District $district, ?string $type, ?string $country, array $elections, string $password = 'Password123!'): User
+    /**
+     * @param bool $registryLinked true = already verified against the voter
+     *   registry (the ID-scan / OCR step on /verify-voter is done); false =
+     *   a matching registry record exists but the account still has to link it.
+     */
+    public function voter(string $email, string $name, District $district, ?string $type, ?string $country, array $elections, string $password = 'Password123!', bool $registryLinked = true): User
     {
         $user = User::firstOrCreate(['email' => $email], [
             'name' => $name,
@@ -161,6 +167,8 @@ class DemoElectionBuilder
             'current_residence_text' => $type === 'diaspora' ? $country : 'Lebanon',
         ]);
 
+        $this->registryRecord($user, $district, $first, $last, $registryLinked);
+
         foreach ($elections as $election) {
             ElectoralRollEntry::updateOrCreate(
                 ['election_id' => $election->id, 'national_id_number' => $nid],
@@ -174,6 +182,36 @@ class DemoElectionBuilder
         }
 
         return $user->fresh('voter');
+    }
+
+    /**
+     * The voter-registry record behind a demo voter, matching what the
+     * /verify-voter form (or the ID OCR) will submit: full name, father
+     * "Demo", mother "Demo Mother", born 1990-01-01.
+     */
+    public function registryRecord(User $user, District $district, string $first, string $last, bool $link): RegistryPerson
+    {
+        $person = RegistryPerson::updateOrCreate(
+            ['civil_registry_number' => 'DEMO-' . strtoupper(substr(hash('sha256', $user->email), 0, 10))],
+            [
+                'full_name_en' => "{$first} {$last}",
+                'father_name_en' => 'Demo',
+                'mother_name_en' => 'Demo Mother',
+                'date_of_birth' => '1990-01-01',
+                'governorate' => $district->governorate?->name_en,
+                'district' => $district->name_en,
+                'constituency_id' => DB::table('constituency_districts')->where('district_id', $district->id)->value('constituency_id'),
+                'is_eligible' => true,
+                'has_voted' => false,
+            ]
+        );
+
+        $user->forceFill($link
+            ? ['registry_person_id' => $person->id, 'verification_status' => 'registry_linked', 'can_vote' => true]
+            : ['registry_person_id' => null, 'verification_status' => 'account_created', 'can_vote' => false]
+        )->save();
+
+        return $person;
     }
 
     /** Selection vector for "list X, optional preferential candidate Y". */
