@@ -156,9 +156,10 @@ ristretto255, with zero-knowledge proofs), counted homomorphically and
 decrypted only as totals, by a threshold of trustees. The full design, threat
 model and limitations are in [`docs/DIASPORA_AND_E2E.md`](docs/DIASPORA_AND_E2E.md).
 
-`php artisan migrate --seed` also runs `DemoE2eSeeder`, which creates four
+`php artisan migrate --seed` also runs `DemoE2eSeeder`, which creates five
 demo elections (open, closed with published results, a draft waiting for its
-key ceremony, and one with diaspora voting disabled) plus these accounts:
+key ceremony, one with diaspora voting disabled, and a Zahle election for
+manual testing) plus these accounts:
 
 | Account | Password | What it is |
 |---|---|---|
@@ -167,7 +168,25 @@ key ceremony, and one with diaspora voting disabled) plus these accounts:
 | `officer@evoting.local` | `Admin123!` | election officer (admin), trustee #3 |
 | `resident@evoting.local` | `Password123!` | resident voter |
 | `diaspora@evoting.local` | `Password123!` | diaspora voter living in France |
-| `newvoter@evoting.local` | `Password123!` | voter who hasn't chosen resident/diaspora yet |
+| `newvoter@evoting.local` | `Password123!` | voter who hasn't chosen resident/diaspora yet or linked the registry |
+| `edwin@gmail.com` | `Password123!` | first-phase test voter |
+
+**Testing with your own account.** Sign up, verify the email, open *Verify
+Voter Record*, choose *Type my details* and enter one of the fictional Zahle
+residents below. Linking creates the account's voter profile from the registry
+record and puts it on the Zahle roll, so it can vote in *2026 Zahle Election
+(Demo)*. Each identity can be claimed by one account only.
+
+| Full name | Father | Mother | Date of birth |
+|---|---|---|---|
+| Elias Khoury | Antoine | Rima Saab | 1992-03-14 |
+| Nour Saliba | Fadi | Hala Nader | 1998-11-02 |
+| Omar Chehab | Walid | Lina Karam | 1989-06-21 |
+| Maya Sfeir | Georges | Dalia Aoun | 2001-01-30 |
+| Tarek Mansour | Samir | Mona Hayek | 1995-08-09 |
+
+Registry records added later reach an election's roll with
+`php artisan roll:sync <election id>`.
 
 The seeder simulates the open election's key ceremony and writes the demo
 trustees' key files to `backend/storage/app/demo-trustee-keyfiles/`
@@ -189,11 +208,11 @@ country is simply "unknown" — voting is never affected.
 **Verify an election** from the command line (independent of the server's code):
 
 ```bash
-npm --prefix frontend run verify -- --election 8 --api http://localhost:8001/api
+npm --prefix frontend run verify -- --election 3 --api http://localhost:8001/api
 ```
 
 ```bash
-php artisan election:verify 8
+php artisan election:verify 3
 ```
 
 **Reproducible client build** — rebuilds the frontend and prints the SHA-256 of
