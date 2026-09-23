@@ -34,12 +34,14 @@ class VoterElectionsController extends Controller
         }
         Election::autoCloseExpired();
         $voter = $user->voter;
+        // Verified = linked to a registry record that is the same person as the voter profile.
+        $verified = $user->registryPerson !== null && \App\Services\RegistryLinkingService::sameIdentity($user, $user->registryPerson);
 
         $elections = Election::query()
             ->whereIn('status', ['active', 'closed'])
             ->orderByDesc('starts_at')
             ->get()
-            ->map(function (Election $e) use ($voter) {
+            ->map(function (Election $e) use ($voter, $verified) {
                 $eligible = $voter && $e->electoralRollEntries()->where('national_id_number', $voter->national_id_number)->exists();
                 $voted = $voter && $e->isE2e()
                     && E2eBallot::where('election_id', $e->id)->where('credential', $this->credentials->credentialFor($e->id, $voter->id))->exists();
@@ -57,6 +59,7 @@ class VoterElectionsController extends Controller
                     'key_ready' => $e->key_ceremony_status === 'complete',
                     'tally_status' => $e->tally_status,
                     'eligible' => $eligible,
+                    'verified' => $verified,
                     'has_voted' => $voted,
                 ];
             });

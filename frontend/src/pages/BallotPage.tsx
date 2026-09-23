@@ -127,6 +127,7 @@ export default function BallotPage() {
             )}
           </Notice>
           <div className="gv-row" style={{ marginTop: 16 }}>
+            {reason === "not_verified" && <Link className="gv-btn primary" to="/verify-voter">Verify Voter Record</Link>}
             <Link className="gv-btn" to="/elections">Back to elections</Link>
           </div>
         </div>

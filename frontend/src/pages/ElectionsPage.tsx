@@ -42,7 +42,7 @@ export default function ElectionsPage() {
 
         <div className="gv-grid-auto" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))" }}>
           {elections?.map((e) => {
-            const canVote = e.is_open && e.eligible && e.crypto_scheme === "e2e" && e.key_ready && (!diaspora || e.diaspora_voting_enabled);
+            const canVote = e.is_open && e.eligible && e.verified && e.crypto_scheme === "e2e" && e.key_ready && (!diaspora || e.diaspora_voting_enabled);
             return (
               <div key={e.id} className="gv-card gv-stack" data-testid={`election-${e.id}`}>
                 <div className="gv-row" style={{ justifyContent: "space-between" }}>
@@ -61,6 +61,11 @@ export default function ElectionsPage() {
 
                 {e.is_open && diaspora && !e.diaspora_voting_enabled && (
                   <Notice kind="warn">Diaspora voting is not available for this election.</Notice>
+                )}
+                {e.is_open && e.eligible && !e.verified && (
+                  <Notice kind="warn">
+                    Verify your identity against the voter registry before voting. <Link to="/verify-voter">Verify Voter Record</Link>
+                  </Notice>
                 )}
                 {e.is_open && !e.eligible && <Notice kind="warn">You're not on this election's electoral roll.</Notice>}
 

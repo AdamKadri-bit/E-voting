@@ -664,6 +664,8 @@ export type VoterElection = {
   key_ready: boolean;
   tally_status: "none" | "decrypting" | "published";
   eligible: boolean;
+  /** Identity verified against the registry, and it matches the voter profile. */
+  verified: boolean;
   has_voted: boolean;
 };
 

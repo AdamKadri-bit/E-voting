@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\RegistryRecordAlreadyClaimedException;
+use App\Exceptions\RegistryRecordMismatchException;
+use App\Services\AuditLogService;
 use App\Http\Requests\LinkRegistryRequest;
 use App\Models\User;
 use App\Services\RegistryLinkingService;
@@ -42,6 +44,14 @@ class RegistryLinkController extends Controller
 
         try {
             $person = $service->linkUser($user, $request->validated());
+        } catch (RegistryRecordMismatchException $e) {
+            app(AuditLogService::class)->log($user, 'registry.link_refused_mismatch', [], null);
+
+            return response()->json([
+                'ok' => false,
+                'message' => $e->getMessage(),
+                'reason' => 'identity_mismatch',
+            ], 409);
         } catch (RegistryRecordAlreadyClaimedException) {
             return response()->json([
                 'ok' => false,
@@ -68,6 +78,9 @@ class RegistryLinkController extends Controller
         }
 
         $user->refresh();
+
+        // Who linked which registry record, and when — needed to investigate any dispute.
+        app(AuditLogService::class)->log($user, 'registry.linked', ['registry_person_id' => $person->id], null);
 
         return response()->json([
             'ok' => true,

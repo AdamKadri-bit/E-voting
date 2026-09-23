@@ -26,6 +26,17 @@ class VoterEligibility
             throw new VotingException('This account has no voter profile yet.', 'no_voter_profile', 403);
         }
 
+        // Voting requires an identity verified against the registry (ID card,
+        // ikhraj qayd, passport or typed details on /verify-voter) — enforced
+        // here, not only by the dashboard button.
+        $person = $user->registryPerson;
+        if (!$person) {
+            throw new VotingException('Verify your identity against the voter registry before voting (Verify Voter Record on your dashboard).', 'not_verified', 403);
+        }
+        if (!\App\Services\RegistryLinkingService::sameIdentity($user, $person)) {
+            throw new VotingException('Your verified registry record and this account\'s voter profile belong to different people or constituencies. Contact the election office.', 'identity_mismatch', 409);
+        }
+
         if ($user->voter_type === null) {
             throw new VotingException('Tell us whether you vote as a resident or from the diaspora first.', 'status_required', 428);
         }
