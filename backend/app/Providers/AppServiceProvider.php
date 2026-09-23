@@ -23,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Named per-IP limiters for auth and voting endpoints (see config/evoting.php).
+        foreach (['login', 'register', 'ballot', 'audit', 'board', 'export'] as $name) {
+            \Illuminate\Support\Facades\RateLimiter::for($name, fn (\Illuminate\Http\Request $request) => \Illuminate\Cache\RateLimiting\Limit::perMinute((int) config("evoting.rate_limits.{$name}"))->by($name . '|' . $request->ip()));
+        }
     }
 }

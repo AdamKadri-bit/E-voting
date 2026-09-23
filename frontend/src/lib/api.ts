@@ -1,3 +1,8 @@
+import type { Manifest } from "../crypto/manifest";
+import type { AuditedBallot, EncryptedBallot } from "../crypto/ballot";
+import type { BoardExport } from "../crypto/board";
+import type { Round1Public, EncryptedShare, PartialShare, AggregateCiphertext } from "../crypto/threshold";
+
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 async function parseJsonSafe(res: Response) {
@@ -243,6 +248,13 @@ export type AdminElection = {
   starts_at?: string | null;
   ends_at?: string | null;
   status: "draft" | "active" | "closed";
+  crypto_scheme?: "e2e" | "legacy";
+  diaspora_voting_enabled?: boolean;
+  trustee_threshold?: number;
+  trustee_count?: number;
+  key_ceremony_status?: "pending" | "in_progress" | "complete" | "failed";
+  joint_public_key?: string | null;
+  tally_status?: "none" | "decrypting" | "published";
   lists_count?: number;
   constituencies_count?: number;
   encrypted_ballots_count?: number;
@@ -515,3 +527,275 @@ export const adminTurnoutTimeline = (electionId: number, buckets = 24) =>
 export const adminAuditLogs = (perPage = 25) =>
   adminReq(`/audit/logs?per_page=${perPage}`);
 export const adminVerifyChain = () => adminReq(`/audit/chain`);
+/* ==========================================================================
+ * Voter status, encrypted voting, bulletin board, trustees, passkeys
+ * ======================================================================== */
+
+
+async function req<T = any>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    credentials: withCookies ? "include" : "omit",
+    headers: { Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return handle<T>(res);
+}
+
+/** Like handle(), but keeps the server's machine-readable `reason` on the error. */
+export class ApiError extends Error {
+  status: number;
+  reason?: string;
+  constructor(message: string, status: number, reason?: string) {
+    super(message);
+    this.status = status;
+    this.reason = reason;
+  }
+}
+
+async function reqWithReason<T = any>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method,
+    credentials: withCookies ? "include" : "omit",
+    headers: { Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await parseJsonSafe(res);
+  if (!res.ok) {
+    const fieldErrors: string[] = data?.errors ? Object.values(data.errors as Record<string, string[]>).flat() : [];
+    throw new ApiError(fieldErrors.join(" ") || data?.message || `Request failed with status ${res.status}`, res.status, data?.reason);
+  }
+  return data as T;
+}
+
+export type VoterStatus = {
+  voter_type: "resident" | "diaspora" | null;
+  residence_country: string | null;
+  residence_country_name: string | null;
+  required: boolean;
+  locked: boolean;
+  locked_by: string[];
+  set_at: string | null;
+};
+
+export type MeUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: "admin" | "voter";
+  email_verified?: boolean;
+  registry_person_id?: number | null;
+  can_vote?: boolean;
+  has_voter_profile?: boolean;
+  voter_status: VoterStatus;
+  is_trustee: boolean;
+  passkeys: number;
+  registry_person?: any;
+};
+
+export const fetchMe = () => req<{ ok: boolean; user: MeUser }>("/me");
+export const setVoterStatus = (voter_type: string, residence_country?: string | null) =>
+  req<{ ok: boolean; status: VoterStatus }>("/me/voter-status", "PUT", { voter_type, residence_country });
+
+export type VoterElection = {
+  id: number;
+  title: string;
+  description?: string | null;
+  status: "active" | "closed";
+  is_open: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  crypto_scheme: "e2e" | "legacy";
+  diaspora_voting_enabled: boolean;
+  key_ready: boolean;
+  tally_status: "none" | "decrypting" | "published";
+  eligible: boolean;
+  has_voted: boolean;
+};
+
+export const listVoterElections = () => req<{ elections: VoterElection[] }>("/elections");
+
+export type E2eBallotResponse = {
+  election: { id: number; title: string; ends_at: string | null; diaspora_voting_enabled: boolean };
+  constituency: { id: number; name: string };
+  district: { id: number; name: string };
+  voter: { name: string; voter_type: "resident" | "diaspora"; residence_country: string | null; residence_country_name: string | null };
+  e2e: { manifest: Manifest; joint_public_key: string; credential: string; has_voted: boolean };
+};
+
+export const getEncryptedBallot = (electionId: number) => reqWithReason<E2eBallotResponse>(`/elections/${electionId}/ballot`);
+
+export type CastReceipt = {
+  tracking_code: string;
+  short_code: string;
+  election_id: number;
+  election_title: string;
+  manifest_hash: string;
+  board_position: number;
+  replaces_previous: boolean;
+};
+
+export const castEncryptedBallot = (electionId: number, ballot: EncryptedBallot) =>
+  reqWithReason<{ message: string; receipt: CastReceipt }>(`/elections/${electionId}/ballots`, "POST", { ballot });
+
+/** Sent WITHOUT cookies on purpose: a spoiled ballot must not be linkable to the voter. */
+export const publishAudit = (electionId: number, audit: AuditedBallot) =>
+  reqWithReason<{ tracking_code: string; short_code: string; status: "audited" }>(`/elections/${electionId}/audited-ballots`, "POST", { audit }, false);
+
+/* ---- Bulletin board (public) ---- */
+
+export type BoardElection = BoardExport["election"] & {
+  crypto_scheme: string;
+  diaspora_voting_enabled: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  results_published_at: string | null;
+};
+
+export type BoardSummary = {
+  election: BoardElection;
+  client_bundle: { file: string; sha256: string } | null;
+  trustees: BoardExport["trustees"];
+  manifests: Manifest[];
+  counts: { cast: number; counted: number; superseded: number; audited: number };
+  tally: { status: string; partials_submitted: number[]; used_trustees: number[] };
+};
+
+export type BoardRow = {
+  sequence?: number;
+  tracking_code: string;
+  short_code: string;
+  status: "counted" | "superseded" | "audited";
+  ballot?: EncryptedBallot;
+  audit?: AuditedBallot;
+};
+
+export const boardElections = () => req<{ elections: BoardElection[] }>("/board/elections", "GET", undefined, false);
+export const boardSummary = (id: number) => req<BoardSummary>(`/board/elections/${id}`, "GET", undefined, false);
+export const boardPage = (id: number, page = 1, q = "", kind: "cast" | "audited" = "cast") =>
+  req<{ data: BoardRow[]; current_page: number; last_page: number; total: number }>(
+    `/board/elections/${id}/ballots?page=${page}&per_page=20&kind=${kind}${q ? `&q=${encodeURIComponent(q)}` : ""}`,
+    "GET",
+    undefined,
+    false
+  );
+export const boardLookup = (id: number, code: string) =>
+  reqWithReason<BoardRow>(`/board/elections/${id}/lookup/${encodeURIComponent(code)}`, "GET", undefined, false);
+export const boardExport = (id: number) => req<BoardExport>(`/board/elections/${id}/export`, "GET", undefined, false);
+
+/* ---- Turnout + map ---- */
+
+export type CountryTurnout = { code: string; name: string; voters: number | null; suppressed: boolean; share: number | null };
+export type Turnout = {
+  election: { id: number; title: string; status: string; tally_status: string; diaspora_voting_enabled: boolean };
+  mode: "declared" | "detected";
+  totals: {
+    voters: number;
+    resident: number;
+    diaspora: number;
+    registered: number;
+    turnout_percentage: number;
+    countries: number;
+    unknown_location: number;
+    location_mismatches?: number;
+  };
+  countries: CountryTurnout[];
+  suppression_threshold: number | null;
+  hourly: { hour: string; voters: number }[];
+  generated_at: string;
+};
+
+export const publicTurnout = (id: number, mode: "declared" | "detected" = "declared") =>
+  req<Turnout>(`/elections/${id}/turnout?mode=${mode}`, "GET", undefined, false);
+export const adminParticipation = (id: number, mode: "declared" | "detected" = "declared") =>
+  adminReq<Turnout>(`/elections/${id}/participation?mode=${mode}`);
+
+/* ---- Trustees ---- */
+
+export type TrusteeSeat = {
+  trustee_index: number;
+  election: { id: number; title: string; status: string; key_ceremony_status: string; tally_status: string; threshold: number; trustee_count: number };
+  phase: "unassigned" | "round1" | "round2" | "round3" | "complete" | "failed";
+  my_rounds: { round1: boolean; round2: boolean; round3: boolean };
+  decryption_submitted: boolean;
+};
+
+export type CeremonyTrustee = {
+  trustee_index: number;
+  name: string | null;
+  round1: Round1Public | null;
+  round1_done: boolean;
+  round2_done: boolean;
+  round3_done: boolean;
+  share_public_key: string | null;
+  complaints: number[];
+};
+
+export type CeremonyState = {
+  phase: TrusteeSeat["phase"];
+  status: string;
+  threshold: number;
+  trustee_count: number;
+  joint_public_key: string | null;
+  trustees: CeremonyTrustee[];
+  election?: { id: number; title: string; status: string };
+  me?: { trustee_index: number; round1_done: boolean; round2_done: boolean; round3_done: boolean };
+};
+
+export const trusteeSeats = () => req<{ seats: TrusteeSeat[] }>("/trustee/elections");
+export const ceremonyState = (id: number) => reqWithReason<CeremonyState>(`/trustee/elections/${id}`);
+export const submitRound1 = (id: number, pub: Omit<Round1Public, "trustee_index">) => reqWithReason(`/trustee/elections/${id}/round1`, "POST", pub);
+export const submitRound2 = (id: number, shares: EncryptedShare[]) => reqWithReason(`/trustee/elections/${id}/round2`, "POST", { shares });
+export const incomingShares = (id: number) => req<{ shares: EncryptedShare[] }>(`/trustee/elections/${id}/incoming`);
+export const submitRound3 = (id: number, share_public_key: string | null, complaints: number[]) =>
+  reqWithReason(`/trustee/elections/${id}/round3`, "POST", { share_public_key, complaints, backup_confirmed: true });
+export type DecryptionState = {
+  election: { id: number; title: string; status: string; tally_status: string };
+  trustee_index: number;
+  threshold: number;
+  submitted: number[];
+  aggregates: (AggregateCiphertext & { constituency_id: number })[];
+};
+export const decryptionState = (id: number) => reqWithReason<DecryptionState>(`/trustee/elections/${id}/decryption`);
+export const submitPartial = (id: number, shares: PartialShare[]) =>
+  reqWithReason<{ submitted: number; needed: number; tally_status: string }>(`/trustee/elections/${id}/partial`, "POST", { shares });
+
+/* ---- Admin: trustees, tally, report ---- */
+
+export const adminTrusteeCandidates = (q = "") =>
+  adminReq<{ users: { id: number; name: string; email: string; role: string }[] }>(`/trustee-candidates?q=${encodeURIComponent(q)}`);
+export const adminCeremony = (id: number) => adminReq<CeremonyState>(`/elections/${id}/ceremony`);
+export const adminAssignTrustees = (id: number, user_ids: number[], threshold: number) =>
+  adminReq<CeremonyState>(`/elections/${id}/trustees`, "PUT", { user_ids, threshold });
+export const adminResetCeremony = (id: number) => adminReq<CeremonyState>(`/elections/${id}/ceremony/reset`, "POST");
+export const adminStartTally = (id: number) => adminReq(`/elections/${id}/tally`, "POST");
+export const adminReportUrl = (id: number) => `${API}/admin/elections/${id}/report`;
+export const adminSetDiaspora = (e: AdminElection, enabled: boolean) =>
+  adminReq<{ election: AdminElection }>(`/elections/${e.id}`, "PUT", {
+    type: e.type,
+    law_ref: e.law_ref,
+    title: e.title,
+    description: e.description,
+    starts_at: e.starts_at,
+    ends_at: e.ends_at,
+    diaspora_voting_enabled: enabled,
+  });
+
+/* ---- Passkeys (WebAuthn) ---- */
+
+export const passkeyList = () => req<{ credentials: { id: number; name: string; created_at: string; last_used_at: string | null }[] }>("/webauthn/credentials");
+export const passkeyRegisterOptions = () => req<{ options: any }>("/webauthn/register/options", "POST");
+export const passkeyRegister = (credential: unknown, name: string) => req("/webauthn/register", "POST", { credential, name });
+export const passkeyDelete = (id: number) => req(`/webauthn/credentials/${id}`, "DELETE");
+export const passkeyLoginOptions = (challenge_token: string) => req<{ options: any }>("/auth/webauthn/options", "POST", { challenge_token });
+export const passkeyLoginVerify = (challenge_token: string, credential: unknown) => req("/auth/webauthn/verify", "POST", { challenge_token, credential });
+
+export type PublicResults = {
+  election: { id: number; title: string; status: string };
+  turnout: { registered: number; voted: number; ballots_recorded: number; turnout_percentage: number };
+  lists: { list_id: number; list_name: string; votes: number; percentage: number }[];
+  preferential_candidates: { candidacy_id: number; candidate_name: string; votes: number }[];
+  results_available: boolean;
+};
+export const publicResults = (id: number) => reqWithReason<PublicResults>(`/elections/${id}/results`, "GET", undefined, false);
+export const adminVerify = (id: number) => adminReq<import("../crypto/verifier").VerifierReport>(`/elections/${id}/verify`);

@@ -141,4 +141,15 @@ class TallyAndDecryptionTest extends E2eTestCase
         $this->authenticateAs($this->voter('x@x.test', $this->d1));
         $this->getJson("/api/trustee/elections/{$this->election->id}/decryption")->assertStatus(403);
     }
+
+    public function test_closed_e2e_election_cannot_be_reopened_and_voted_one_cannot_return_to_draft(): void
+    {
+        $this->castKnownVotes();
+        $this->loginAsAdmin();
+        $this->patchJson("/api/admin/elections/{$this->election->id}/status", ['status' => 'draft'])->assertStatus(422);
+        $this->closeAndAggregate();
+        $this->patchJson("/api/admin/elections/{$this->election->id}/status", ['status' => 'active'])->assertStatus(422);
+        $this->patchJson("/api/admin/elections/{$this->election->id}/status", ['status' => 'draft'])->assertStatus(422);
+        $this->assertSame('closed', $this->election->fresh()->status);
+    }
 }

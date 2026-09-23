@@ -81,7 +81,8 @@ class DemoElectionBuilder
             }
         }
 
-        return $election;
+        // Reload so column defaults (diaspora_voting_enabled, tally_status, …) are present.
+        return $election->fresh();
     }
 
     /**

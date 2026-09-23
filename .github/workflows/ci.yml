@@ -64,6 +64,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      # Ballot crypto: proofs, threshold decryption, verifier tamper cases
+      - name: Crypto unit tests
+        working-directory: frontend
+        run: npm test
+
       # runs tsc -b then vite build
       - name: Typecheck and build
         working-directory: frontend

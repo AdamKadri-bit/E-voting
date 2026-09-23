@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import TurnoutPanel from "../../components/analytics/TurnoutPanel";
 import {
   Vote,
   Users,
@@ -285,6 +286,14 @@ export default function AdminOverview() {
             </div>
 
             <ReadinessPanel data={data} />
+
+            {/* Live turnout and where voters voted from — never results. */}
+            {data.election.crypto_scheme !== "legacy" && (
+              <Card>
+                <h2 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 900 }}>Turnout & participation map</h2>
+                <TurnoutPanel electionId={data.election.id} admin />
+              </Card>
+            )}
 
             <Card>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

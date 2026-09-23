@@ -255,7 +255,7 @@ describe("key files and tracking codes", () => {
     const m = makeManifest();
     const c = ceremony();
     const { ballot } = encryptBallot(m, c.jointPk, "x", selectionVector(m, 100, null));
-    expect(trackingCode(ballot).full).toBe(trackingCode({ ...ballot, credential: "zzz" }).full);
+    expect(trackingCode(ballot).full).toBe(trackingCode({ ...ballot, credential: "zzz" } as typeof ballot).full);
     void hashToScalar; void intScalar;
   });
 });

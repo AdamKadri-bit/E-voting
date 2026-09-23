@@ -35,3 +35,11 @@ dist/
 # Local agent/editor settings and generated data exports
 /.claude/
 /*-candidates.xlsx
+
+# Trustee key files, the GeoIP database and test artefacts
+*.evkey
+/backend/storage/app/geoip/
+/backend/storage/app/demo-trustee-keyfiles/
+/backend/storage/app/e2e-keyfiles/
+/frontend/test-results/
+/frontend/playwright-report/

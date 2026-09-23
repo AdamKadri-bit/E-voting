@@ -1,647 +1,325 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-  Vote,
-  UserCheck,
-  CheckCircle2,
-  AlertCircle,
-  ChevronRight,
-} from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Vote, Plane, ShieldCheck, Lock, Search, CheckCircle2, XCircle, RefreshCw, UserCheck } from "lucide-react";
 import DashboardLayout from "../components/layouts/DashboardLayout";
-import { Card, Section } from "../components/common/Card";
-import { castVote, getBallot } from "../lib/api";
+import PageHeader from "../components/common/PageHeader";
+import Notice from "../components/common/Notice";
+import ProgressBar from "../components/common/ProgressBar";
+import TrackingCode from "../components/common/TrackingCode";
+import { flag } from "../components/common/CountrySelect";
+import { ApiError, castEncryptedBallot, getEncryptedBallot, publishAudit, type E2eBallotResponse } from "../lib/api";
+import { runCrypto } from "../crypto/client";
+import { selectionVector, type Manifest } from "../crypto/manifest";
+import { describeSelection, type AuditedBallot, type BallotSecrets, type EncryptedBallot } from "../crypto/ballot";
 
-type CandidateProfile = {
-  id: number;
-  full_name?: string | null;
-  full_name_ar?: string | null;
-  national_id_number?: string | null;
-};
+type Step = "confirm" | "choose" | "encrypting" | "decide" | "casting" | "audited";
 
-type Candidacy = {
-  id: number;
-  candidate_profile?: CandidateProfile | null;
-};
+type Encrypted = { ballot: EncryptedBallot; secrets: BallotSecrets; tracking: { full: string; short: string }; ms: number };
 
-type ListCandidate = {
-  id: number;
-  candidacy_id: number;
-  position_order?: number | null;
-  candidacy?: Candidacy | null;
-};
-
-type BallotList = {
-  id: number;
-  list_name?: string | null;
-  list_name_en?: string | null;
-  list_name_ar?: string | null;
-  list_candidates?: ListCandidate[];
-};
-
-type BallotResponse = {
-  election?: {
-    id?: number;
-    title?: string;
-  };
-  constituency?: {
-    id?: number;
-    name?: string | null;
-  };
-  lists?: BallotList[];
-};
-
+/**
+ * The ballot. Residents go straight to their choices; diaspora voters first
+ * confirm their details under a "Diaspora ballot" banner. Either way the
+ * selection is encrypted in a Web Worker in this browser, then the voter sees
+ * the tracking code and chooses Cast (submit) or Audit (reveal the randomness
+ * so anyone can check this device encrypted what it showed, then start over).
+ */
 export default function BallotPage() {
   const nav = useNavigate();
   const { electionId } = useParams();
+  const eid = Number(electionId);
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [ballot, setBallot] = useState<BallotResponse | null>(null);
-  const [selectedListId, setSelectedListId] = useState<number | null>(null);
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
-    null
-  );
+  const [data, setData] = useState<E2eBallotResponse | null>(null);
+  const [error, setError] = useState<ApiError | Error | null>(null);
+  const [step, setStep] = useState<Step>("choose");
+  const [listId, setListId] = useState<number | null>(null);
+  const [candId, setCandId] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [enc, setEnc] = useState<Encrypted | null>(null);
+  const [audit, setAudit] = useState<{ record: AuditedBallot; ok: boolean; reason?: string; short: string; published: boolean; error?: string } | null>(null);
+  const [castErr, setCastErr] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const data = await getBallot(Number(electionId));
-        if (!mounted) return;
-        setBallot(data);
-      } catch (e: any) {
-        if (!mounted) return;
-        setError(e?.message || "Could not load ballot.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    if (electionId) load();
-
-    return () => {
-      mounted = false;
-    };
-  }, [electionId]);
-
-  const lists = ballot?.lists ?? [];
-
-  const selectedList = useMemo(
-    () => lists.find((l) => l.id === selectedListId) ?? null,
-    [lists, selectedListId]
-  );
-
-  const selectedListCandidates = useMemo(
-    () => selectedList?.list_candidates ?? [],
-    [selectedList]
-  );
-
-  const selectedCandidate = useMemo(
-    () =>
-      selectedListCandidates.find((c) => c.candidacy_id === selectedCandidateId) ??
-      null,
-    [selectedListCandidates, selectedCandidateId]
-  );
-
-  function getListTitle(list: BallotList) {
-    return (
-      list.list_name ||
-      list.list_name_en ||
-      list.list_name_ar ||
-      `List #${list.id}`
-    );
-  }
-
-  function getCandidateName(item: ListCandidate) {
-    return (
-      item.candidacy?.candidate_profile?.full_name_ar ||
-      item.candidacy?.candidate_profile?.full_name ||
-      `Candidate #${item.candidacy_id}`
-    );
-  }
-
-  async function handleSubmit() {
-    if (!selectedListId) {
-      setError("Select a list before submitting your ballot.");
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      // selectedCandidateId holds a candidacy_id; the backend expects it as
-      // preferential_candidacy_id (the optional preferential choice on the list).
-      const result = await castVote(Number(electionId), {
-        list_id: selectedListId,
-        preferential_candidacy_id: selectedCandidateId,
+    runCrypto("warmup").catch(() => {});
+    getEncryptedBallot(eid)
+      .then((d) => {
+        setData(d);
+        setStep(d.voter.voter_type === "diaspora" ? "confirm" : "choose");
+      })
+      .catch((e: ApiError) => {
+        if (e.reason === "status_required") nav("/voter-status", { replace: true, state: { next: `/elections/${eid}/ballot` } });
+        else setError(e);
       });
+  }, [eid, nav]);
 
-      // The backend returns the hash nested as `receipt.receipt_hash`.
-      // Keep the other shapes as fallbacks for compatibility.
-      const receiptHash =
-        result?.receipt?.receipt_hash ||
-        result?.receipt_hash ||
-        result?.receiptHash ||
-        result?.receipt?.hash ||
-        result?.hash;
+  const manifest: Manifest | null = data?.e2e.manifest ?? null;
+  const lists = useMemo(() => manifest?.options.filter((o) => o.type === "list") ?? [], [manifest]);
+  const candidates = useMemo(() => manifest?.options.filter((o) => o.type === "candidate" && o.list_id === listId) ?? [], [manifest, listId]);
+  const diaspora = data?.voter.voter_type === "diaspora";
 
-      if (!receiptHash) {
-        throw new Error("Vote submitted but no receipt hash was returned.");
-      }
-
-      nav(`/receipt/${receiptHash}`);
+  async function encrypt() {
+    if (!manifest || !data || listId === null) return;
+    setStep("encrypting");
+    setProgress(0);
+    setCastErr(null);
+    try {
+      const out = await runCrypto<Encrypted>(
+        "encryptBallot",
+        { manifest, jointPk: data.e2e.joint_public_key, credential: data.e2e.credential, selections: selectionVector(manifest, listId, candId) },
+        (p) => setProgress(p)
+      );
+      setEnc(out);
+      setStep("decide");
     } catch (e: any) {
-      setError(e?.message || "Vote submission failed.");
-    } finally {
-      setSubmitting(false);
+      setCastErr(e.message);
+      setStep("choose");
     }
+  }
+
+  async function cast() {
+    if (!enc) return;
+    setStep("casting");
+    try {
+      const r = await castEncryptedBallot(eid, enc.ballot);
+      nav(`/elections/${eid}/receipt/${r.receipt.short_code}`, { replace: true, state: { receipt: r.receipt, encryptMs: enc.ms } });
+    } catch (e: any) {
+      setCastErr(e.message);
+      setStep("decide");
+    }
+  }
+
+  async function doAudit() {
+    if (!enc || !manifest || !data) return;
+    const { audit: record, check } = await runCrypto<{ audit: AuditedBallot; check: { ok: boolean; reason?: string } }>("auditBallot", {
+      manifest,
+      jointPk: data.e2e.joint_public_key,
+      ballot: enc.ballot,
+      secrets: enc.secrets,
+    });
+    const state = { record, ok: check.ok, reason: check.reason, short: enc.tracking.short, published: false as boolean, error: undefined as string | undefined };
+    try {
+      await publishAudit(eid, record);
+      state.published = true;
+    } catch (e: any) {
+      state.error = e.message;
+    }
+    setAudit(state);
+    setEnc(null); // this ballot is spoiled; its randomness is public now
+    setStep("audited");
+  }
+
+  const selectionText = (sel: { list: string | null; candidate: string | null }) =>
+    `${sel.list ?? "—"}${sel.candidate ? ` · preferential vote: ${sel.candidate}` : " · no preferential vote"}`;
+
+  /* ------------------------------------------------------------------ render */
+
+  if (error) {
+    const reason = (error as ApiError).reason;
+    return (
+      <DashboardLayout>
+        <div className="gv-page" style={{ maxWidth: 760 }}>
+          <PageHeader pill={<><Vote size={14} /> Ballot</>} pillTone="green" title={reason === "diaspora_disabled" ? "Diaspora voting unavailable" : "Ballot unavailable"} />
+          <Notice kind={reason === "diaspora_disabled" ? "warn" : "error"}>
+            <div data-testid="ballot-error" data-reason={reason}>{error.message}</div>
+            {reason === "diaspora_disabled" && (
+              <div style={{ marginTop: 8 }} className="gv-muted">
+                The election's administrators have not enabled voting from abroad for this election. If you're in Lebanon on election day, change your status to resident before polling opens next time.
+              </div>
+            )}
+          </Notice>
+          <div className="gv-row" style={{ marginTop: 16 }}>
+            <Link className="gv-btn" to="/elections">Back to elections</Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!data || !manifest) {
+    return (
+      <DashboardLayout>
+        <div className="gv-page gv-muted">Loading your ballot…</div>
+      </DashboardLayout>
+    );
   }
 
   return (
-    <DashboardLayout userEmail={undefined}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 16px" }}>
-        <div style={{ marginBottom: 28 }}>
+    <DashboardLayout>
+      <div className="gv-page" style={{ maxWidth: 860 }}>
+        {diaspora && (
           <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 10px",
-              borderRadius: 999,
-              background: "rgba(71, 167, 111, 0.14)",
-              border: "1px solid rgba(71, 167, 111, 0.28)",
-              color: "#47a76f",
-              fontSize: 12,
-              fontWeight: 900,
-              marginBottom: 14,
-            }}
+            data-testid="diaspora-banner"
+            style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 16, border: "1px solid rgba(59,130,246,0.45)", background: "rgba(59,130,246,0.12)", display: "flex", gap: 12, alignItems: "center" }}
           >
-            <Vote size={14} />
-            Ballot
-          </div>
-
-          <h1
-            style={{
-              fontSize: 40,
-              fontWeight: 900,
-              margin: 0,
-              lineHeight: 1.08,
-            }}
-          >
-            Cast your ballot
-          </h1>
-
-          <p
-            style={{
-              marginTop: 12,
-              marginBottom: 0,
-              color: "var(--gov-muted)",
-              fontSize: 15,
-              lineHeight: 1.75,
-              maxWidth: 760,
-            }}
-          >
-            {ballot?.election?.title || "Election"}{" "}
-            {ballot?.constituency?.name ? `— ${ballot.constituency.name}` : ""}
-          </p>
-        </div>
-
-        {error && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: "14px 16px",
-              borderRadius: 14,
-              border: "1px solid rgba(239, 68, 68, 0.28)",
-              background: "rgba(239, 68, 68, 0.10)",
-              color: "#fca5a5",
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <AlertCircle size={18} />
-            <span>{error}</span>
+            <span style={{ fontSize: 30 }} aria-hidden>{flag(data.voter.residence_country ?? "")}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 900, display: "flex", gap: 8, alignItems: "center" }}><Plane size={16} /> Diaspora ballot</div>
+              <div className="gv-muted" style={{ fontSize: 14 }}>
+                Voting from {data.voter.residence_country_name} for your home district, {data.district.name}.
+              </div>
+            </div>
           </div>
         )}
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.7fr 1fr",
-            gap: 16,
-          }}
-        >
-          <div style={{ display: "grid", gap: 16 }}>
-            <Section
-              title="Available lists"
-              description="Choose one list to activate candidate preference."
-            >
-              {loading ? (
-                <Card>
-                  <div
-                    style={{
-                      minHeight: 120,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "var(--gov-muted)",
-                      fontSize: 14,
-                    }}
-                  >
-                    Loading ballot…
-                  </div>
-                </Card>
-              ) : lists.length === 0 ? (
-                <Card>
-                  <div
-                    style={{
-                      minHeight: 120,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "var(--gov-muted)",
-                      fontSize: 14,
-                    }}
-                  >
-                    No ballot lists were returned.
-                  </div>
-                </Card>
-              ) : (
-                <div style={{ display: "grid", gap: 12 }}>
-                  {lists.map((list) => {
-                    const active = selectedListId === list.id;
-                    const listCandidates = list.list_candidates ?? [];
+        <PageHeader pill={<><Vote size={14} /> {diaspora ? "Diaspora ballot" : "Ballot"}</>} pillTone="green" title={data.election.title}>
+          {data.constituency.name} · {data.district.name}
+        </PageHeader>
 
-                    return (
-                      <Card key={list.id} clickable>
-                        <div
-                          onClick={() => {
-                            setSelectedListId(list.id);
-                            setSelectedCandidateId(null);
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setSelectedListId(list.id);
-                              setSelectedCandidateId(null);
-                            }
-                          }}
-                          style={{
-                            display: "grid",
-                            gap: 12,
-                            cursor: "pointer",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "auto 1fr auto",
-                              gap: 14,
-                              alignItems: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: 22,
-                                height: 22,
-                                borderRadius: 999,
-                                border: active
-                                  ? "6px solid #47a76f"
-                                  : "2px solid var(--gov-edge)",
-                                background: active
-                                  ? "rgba(71, 167, 111, 0.14)"
-                                  : "transparent",
-                                boxSizing: "border-box",
-                              }}
-                            />
+        <div style={{ marginBottom: 16 }}>
+          <Notice kind="info">
+            <RefreshCw size={14} style={{ verticalAlign: -2 }} /> <strong>You can change your vote until the election closes. Only your last vote counts.</strong>
+            {data.e2e.has_voted && " You already voted — casting again replaces your earlier ballot."}
+          </Notice>
+        </div>
 
-                            <div style={{ minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontSize: 17,
-                                  fontWeight: 900,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {getListTitle(list)}
-                              </div>
-
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  color: "var(--gov-muted)",
-                                  lineHeight: 1.6,
-                                }}
-                              >
-                                {listCandidates.length > 0
-                                  ? `${listCandidates.length} candidate(s) available`
-                                  : "No candidate-level selection available"}
-                              </div>
-                            </div>
-
-                            {active && (
-                              <CheckCircle2
-                                size={18}
-                                style={{ color: "#47a76f" }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </Section>
-
-            <Section
-              title="Candidate preference"
-              description="Optional unless your ballot rules require one."
-            >
-              {!selectedList ? (
-                <Card>
-                  <div
-                    style={{
-                      minHeight: 110,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "var(--gov-muted)",
-                      fontSize: 14,
-                      textAlign: "center",
-                    }}
-                  >
-                    Select a list first to view available candidates.
-                  </div>
-                </Card>
-              ) : selectedListCandidates.length === 0 ? (
-                <Card>
-                  <div
-                    style={{
-                      minHeight: 110,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "var(--gov-muted)",
-                      fontSize: 14,
-                      textAlign: "center",
-                    }}
-                  >
-                    This list does not expose candidate-level selection.
-                  </div>
-                </Card>
-              ) : (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: 12,
-                  }}
-                >
-                  {selectedListCandidates.map((candidateItem) => {
-                    const active =
-                      selectedCandidateId === candidateItem.candidacy_id;
-
-                    return (
-                      <Card key={candidateItem.id} clickable>
-                        <div
-                          onClick={() =>
-                            setSelectedCandidateId(candidateItem.candidacy_id)
-                          }
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setSelectedCandidateId(candidateItem.candidacy_id);
-                            }
-                          }}
-                          style={{
-                            display: "grid",
-                            gap: 12,
-                            cursor: "pointer",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "auto 1fr auto",
-                              gap: 12,
-                              alignItems: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: 42,
-                                height: 42,
-                                borderRadius: 12,
-                                border: active
-                                  ? "1px solid rgba(71, 167, 111, 0.36)"
-                                  : "1px solid var(--gov-edge)",
-                                background: active
-                                  ? "rgba(71, 167, 111, 0.14)"
-                                  : "rgba(255,255,255,0.04)",
-                                display: "grid",
-                                placeItems: "center",
-                                color: active ? "#47a76f" : "var(--gov-muted)",
-                              }}
-                            >
-                              <UserCheck size={20} />
-                            </div>
-
-                            <div style={{ minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontSize: 15,
-                                  fontWeight: 900,
-                                  lineHeight: 1.35,
-                                }}
-                              >
-                                {getCandidateName(candidateItem)}
-                              </div>
-                            </div>
-
-                            {active && (
-                              <CheckCircle2
-                                size={18}
-                                style={{ color: "#47a76f" }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </Section>
+        {step === "confirm" && (
+          <div className="gv-card gv-stack" data-testid="diaspora-confirm">
+            <div style={{ fontWeight: 900, fontSize: 18 }}><UserCheck size={18} style={{ verticalAlign: -3 }} /> Confirm your details</div>
+            <dl style={{ display: "grid", gridTemplateColumns: "max-content minmax(0,1fr)", gap: "8px 14px", margin: 0 }}>
+              <dt className="gv-muted">Name</dt><dd style={{ margin: 0, fontWeight: 800 }}>{data.voter.name}</dd>
+              <dt className="gv-muted">Living in</dt><dd style={{ margin: 0, fontWeight: 800 }}>{flag(data.voter.residence_country ?? "")} {data.voter.residence_country_name}</dd>
+              <dt className="gv-muted">Home district</dt><dd style={{ margin: 0, fontWeight: 800 }}>{data.district.name}</dd>
+              <dt className="gv-muted">Constituency</dt><dd style={{ margin: 0, fontWeight: 800 }}>{data.constituency.name}</dd>
+            </dl>
+            <p className="gv-muted" style={{ margin: 0, fontSize: 14 }}>
+              Details wrong? Your country can be changed from your profile when no election you can vote in is open.
+            </p>
+            <div className="gv-sticky-actions">
+              <button type="button" className="gv-btn primary block" onClick={() => setStep("choose")} data-testid="confirm-details">
+                These details are correct — show my ballot
+              </button>
+            </div>
           </div>
+        )}
 
-          <div style={{ display: "grid", gap: 16, alignSelf: "start" }}>
-            <Card>
-              <div style={{ display: "grid", gap: 18 }}>
-                <div
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 16,
-                    background: "rgba(71, 167, 111, 0.16)",
-                    border: "1px solid rgba(71, 167, 111, 0.32)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#47a76f",
-                  }}
-                >
-                  <Vote size={28} />
-                </div>
-
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ fontSize: 20, fontWeight: 900 }}>
-                    Review selection
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: 14,
-                      color: "var(--gov-muted)",
-                      lineHeight: 1.7,
+        {step === "choose" && (
+          <div className="gv-stack">
+            {castErr && <Notice kind="error">{castErr}</Notice>}
+            <section className="gv-stack" style={{ gap: 10 }}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>1. Choose one list</h2>
+              <div role="radiogroup" aria-label="Lists" className="gv-stack" style={{ gap: 10 }}>
+                {lists.map((l) => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={listId === l.id}
+                    className="gv-choice"
+                    data-testid={`list-${l.id}`}
+                    onClick={() => {
+                      setListId(l.id);
+                      setCandId(null);
                     }}
                   >
-                    Confirm the information below before submitting your ballot.
-                  </div>
+                    <span className="dot" aria-hidden />
+                    <span style={{ fontWeight: 900, fontSize: 17 }}>{l.label}</span>
+                    {listId === l.id ? <CheckCircle2 size={20} color="#47a76f" /> : <span />}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="gv-stack" style={{ gap: 10 }}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>2. Preferential vote <span className="gv-muted" style={{ fontSize: 14, fontWeight: 600 }}>(optional)</span></h2>
+              {listId === null ? (
+                <div className="gv-muted">Choose a list first — you may then give one preferential vote to a candidate on it from your district.</div>
+              ) : candidates.length === 0 ? (
+                <div className="gv-muted">This list has no candidates from your district.</div>
+              ) : (
+                <div role="radiogroup" aria-label="Preferential vote" className="gv-grid-auto">
+                  {[{ id: null as number | null, label: "No preferential vote" }, ...candidates.map((c) => ({ id: c.id as number | null, label: c.label }))].map((c) => (
+                    <button
+                      key={String(c.id)}
+                      type="button"
+                      role="radio"
+                      aria-checked={candId === c.id}
+                      className="gv-choice"
+                      data-testid={`cand-${c.id ?? "none"}`}
+                      onClick={() => setCandId(c.id)}
+                    >
+                      <span className="dot" aria-hidden />
+                      <span style={{ fontWeight: 800 }}>{c.label}</span>
+                      <span />
+                    </button>
+                  ))}
                 </div>
+              )}
+            </section>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 12,
-                    padding: "14px",
-                    borderRadius: 14,
-                    border: "1px solid var(--gov-edge)",
-                    background: "rgba(255,255,255,0.03)",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--gov-muted)",
-                        fontWeight: 800,
-                        marginBottom: 4,
-                      }}
-                    >
-                      Election
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 900 }}>
-                      {ballot?.election?.title || `Election #${electionId}`}
-                    </div>
-                  </div>
+            <div className="gv-sticky-actions">
+              <button type="button" className="gv-btn primary block" disabled={listId === null} onClick={encrypt} data-testid="encrypt">
+                <Lock size={16} /> Encrypt my ballot
+              </button>
+            </div>
+          </div>
+        )}
 
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--gov-muted)",
-                        fontWeight: 800,
-                        marginBottom: 4,
-                      }}
-                    >
-                      Selected list
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 900 }}>
-                      {selectedList ? getListTitle(selectedList) : "None selected"}
-                    </div>
-                  </div>
+        {step === "encrypting" && (
+          <div className="gv-card gv-stack" aria-live="polite">
+            <div style={{ fontWeight: 900 }}><Lock size={16} style={{ verticalAlign: -3 }} /> Encrypting on this device…</div>
+            <ProgressBar value={progress} label="Encrypting and building zero-knowledge proofs" />
+            <div className="gv-muted" style={{ fontSize: 13 }}>Your choice never leaves this browser unencrypted. This runs in the background so the page stays responsive.</div>
+          </div>
+        )}
 
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--gov-muted)",
-                        fontWeight: 800,
-                        marginBottom: 4,
-                      }}
-                    >
-                      Selected candidate
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 900 }}>
-                      {selectedCandidate
-                        ? getCandidateName(selectedCandidate)
-                        : "No candidate selected"}
-                    </div>
-                  </div>
-                </div>
+        {(step === "decide" || step === "casting") && enc && (
+          <div className="gv-stack">
+            <div className="gv-card gv-stack">
+              <div className="gv-row" style={{ gap: 8, fontWeight: 900 }}><ShieldCheck size={18} color="#47a76f" /> Ballot encrypted <span className="gv-muted" style={{ fontWeight: 600, fontSize: 13 }}>({enc.ms} ms)</span></div>
+              <div>
+                <div className="gv-muted" style={{ fontSize: 13, marginBottom: 6 }}>Your tracking code</div>
+                <TrackingCode short={enc.tracking.short} full={enc.tracking.full} />
+              </div>
+              <div className="gv-muted" style={{ fontSize: 14 }}>
+                You chose: <strong style={{ color: "var(--gov-ink)" }}>{selectionText(describeSelection(manifest, enc.secrets.selections))}</strong>
+              </div>
+            </div>
 
-                <button
-                  onClick={handleSubmit}
-                  disabled={!selectedListId || loading || submitting}
-                  style={{
-                    appearance: "none",
-                    border: "none",
-                    outline: "none",
-                    cursor:
-                      !selectedListId || loading || submitting
-                        ? "not-allowed"
-                        : "pointer",
-                    opacity: !selectedListId || loading || submitting ? 0.55 : 1,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    width: "100%",
-                    padding: "14px 16px",
-                    borderRadius: 14,
-                    background: "rgba(71, 167, 111, 0.18)",
-                    color: "#47a76f",
-                    fontWeight: 900,
-                    fontSize: 14,
-                    boxShadow: "inset 0 0 0 1px rgba(71, 167, 111, 0.35)",
-                  }}
-                >
-                  {submitting ? "Submitting..." : "Submit ballot"}
-                  <ChevronRight size={16} />
+            <div className="gv-card gv-stack" style={{ gap: 10 }}>
+              <div style={{ fontWeight: 900 }}>Cast it, or audit it first?</div>
+              <ul className="gv-muted" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7, fontSize: 14 }}>
+                <li><strong>Cast</strong> submits this encrypted ballot. You'll get a receipt with the tracking code.</li>
+                <li><strong>Audit</strong> proves this device encrypted exactly your choice: the ballot is opened, published as <em>audited</em> (not counted), and you encrypt again. Use it if you have any doubt.</li>
+              </ul>
+            </div>
+            {castErr && <Notice kind="error">{castErr}</Notice>}
+
+            <div className="gv-sticky-actions">
+              <div className="gv-row" style={{ flexWrap: "nowrap" }}>
+                <button type="button" className="gv-btn blue" style={{ flex: 1 }} onClick={doAudit} disabled={step === "casting"} data-testid="audit">
+                  <Search size={16} /> Audit
+                </button>
+                <button type="button" className="gv-btn primary" style={{ flex: 2 }} onClick={cast} disabled={step === "casting"} data-testid="cast">
+                  <Vote size={16} /> {step === "casting" ? "Casting…" : "Cast ballot"}
                 </button>
               </div>
-            </Card>
-
-            <Card>
-              <div style={{ display: "grid", gap: 10 }}>
-                <div style={{ fontSize: 15, fontWeight: 900 }}>
-                  What happens next
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "var(--gov-muted)",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  After submission, the system returns a receipt hash. Keep it.
-                  You will use it later to verify inclusion in the final tally.
-                </div>
-              </div>
-            </Card>
+            </div>
           </div>
-        </div>
+        )}
+
+        {step === "audited" && audit && (
+          <div className="gv-stack" data-testid="audit-result" data-ok={audit.ok}>
+            <Notice kind={audit.ok ? "ok" : "error"}>
+              {audit.ok ? (
+                <><CheckCircle2 size={14} style={{ verticalAlign: -2 }} /> <strong>Audit passed.</strong> The ballot decrypts to exactly what you chose: {selectionText(describeSelection(manifest, audit.record.selections))}.</>
+              ) : (
+                <><XCircle size={14} style={{ verticalAlign: -2 }} /> <strong>Audit FAILED:</strong> {audit.reason}. This device did not encrypt what it showed you. Do not cast from it — use another device and report this.</>
+              )}
+            </Notice>
+            <div className="gv-card gv-stack">
+              <div>That spoiled ballot ({audit.short}) {audit.published ? "is now on the public bulletin board as audited. It will never be counted." : `could not be published: ${audit.error}`}</div>
+              <div className="gv-muted" style={{ fontSize: 14 }}>
+                Don't just trust this screen: check it independently on another device at{" "}
+                <Link to={`/board/${eid}?code=${audit.short}`}>the bulletin board</Link> or run the <Link to={`/verify?election=${eid}`}>verifier</Link>.
+              </div>
+            </div>
+            <div className="gv-sticky-actions">
+              <button type="button" className="gv-btn primary block" onClick={() => { setAudit(null); setStep("choose"); }} data-testid="reencrypt">
+                <RefreshCw size={16} /> Encrypt again
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      <style>{`
-        @media (max-width: 960px) {
-          div[style*="grid-template-columns: 1.7fr 1fr"] {
-            grid-template-columns: 1fr !important;
-          }
-
-          div[style*="repeat(2, minmax(0, 1fr))"] {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </DashboardLayout>
   );
 }

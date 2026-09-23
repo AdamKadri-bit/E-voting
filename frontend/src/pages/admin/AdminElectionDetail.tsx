@@ -16,6 +16,7 @@ import {
   type AdminConstituency,
 } from "../../lib/api";
 import { CandidateSheetImport } from "../../components/admin/CandidateSheetImport";
+import E2eElectionPanel from "../../components/admin/E2eElectionPanel";
 
 export default function AdminElectionDetail() {
   const { electionId } = useParams();
@@ -62,6 +63,8 @@ export default function AdminElectionDetail() {
         <div style={{ color: "var(--gov-muted)" }}>Election not found.</div>
       ) : (
         <div style={{ display: "grid", gap: 24 }}>
+          <E2eElectionPanel election={election} onChange={load} />
+
           {/* Import comes first: it can attach constituencies itself, so it
               works even on an election with nothing set up yet. */}
           <CandidateSheetImport

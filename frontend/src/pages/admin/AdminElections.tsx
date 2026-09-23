@@ -317,7 +317,8 @@ export default function AdminElections() {
                 </div>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {el.status !== "active" && (
+                  {/* End-to-end elections only move forward once closed (server-enforced too). */}
+                  {el.status !== "active" && !(el.crypto_scheme !== "legacy" && el.status === "closed") && (
                     <button
                       className="govBtn"
                       onClick={() => setStatus(el, "active")}
@@ -342,7 +343,7 @@ export default function AdminElections() {
                       <Square size={14} /> Close
                     </button>
                   )}
-                  {el.status !== "draft" && (
+                  {el.status !== "draft" && !(el.crypto_scheme !== "legacy" && el.status === "closed") && (
                     <button className="govBtn" onClick={() => setStatus(el, "draft")} style={btn("#94a3b8")}>
                       <FileEdit size={14} /> Draft
                     </button>

@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify": "tsx scripts/verify-election.ts",
+    "test": "vitest run",
+    "gen:vectors": "tsx scripts/gen-crypto-vectors.ts",
+    "gen:geo": "tsx scripts/gen-geo-data.ts"
   },
   "dependencies": {
     "@noble/ciphers": "^2.4.0",

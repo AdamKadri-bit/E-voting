@@ -65,6 +65,19 @@ class BulletinBoardController extends Controller
             ->header('Cache-Control', 'no-store');
     }
 
+    /** Published results only — nothing exists to show before the trustees decrypt. */
+    public function results(Election $election, \App\Services\BallotTallyService $tally)
+    {
+        if (!$election->isE2e() || $election->tally_status !== 'published') {
+            return response()->json(['message' => 'Results are published only after the trustees decrypt the tally.', 'reason' => 'not_published'], 404);
+        }
+
+        $r = $tally->tally($election);
+        unset($r['decode_errors']);
+
+        return response()->json($r);
+    }
+
     /** Live turnout + map. Results are never part of this response. */
     public function turnout(Request $request, Election $election, ParticipationAnalyticsService $analytics)
     {

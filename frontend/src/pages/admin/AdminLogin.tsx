@@ -2,6 +2,8 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GovShell from "../../ui/GovShell";
+import { startAuthentication } from "@simplewebauthn/browser";
+import { passkeyLoginOptions, passkeyLoginVerify } from "../../lib/api";
 
 const API_URL =
   (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
@@ -22,6 +24,7 @@ export default function AdminLogin() {
   const [secretPass, setSecretPass] = useState("");
   const [isWorking, setIsWorking] = useState(false);
   const [bannerErr, setBannerErr] = useState<string | null>(null);
+  const [passkeyToken, setPasskeyToken] = useState<string | null>(null);
 
   const canSubmit = useMemo(
     () => mailBox.trim().length > 3 && secretPass.length >= 1,
@@ -59,6 +62,33 @@ export default function AdminLogin() {
         return;
       }
 
+      if (j?.two_factor === "webauthn") {
+        setPasskeyToken(j.challenge_token);
+        await finishWithPasskey(j.challenge_token);
+        return;
+      }
+
+      await afterSession();
+    } catch (e: any) {
+      setBannerErr(e?.message || "Sign in failed.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  async function finishWithPasskey(token: string) {
+    setBannerErr(null);
+    try {
+      const { options } = await passkeyLoginOptions(token);
+      await passkeyLoginVerify(token, await startAuthentication({ optionsJSON: options }));
+      setPasskeyToken(null);
+      await afterSession();
+    } catch (e: any) {
+      setBannerErr(e?.name === "NotAllowedError" ? "Passkey check cancelled. Try again." : e?.message || "Passkey check failed.");
+    }
+  }
+
+  async function afterSession() {
       // The login response only sets the cookie; the role lives inside the JWT,
       // so the server has to be asked which panel this account belongs to.
       const meRes = await fetch(`${API_URL}/me`, {
@@ -81,11 +111,6 @@ export default function AdminLogin() {
       }
 
       navJump("/admin", { replace: true });
-    } catch (e: any) {
-      setBannerErr(e?.message || "Sign in failed.");
-    } finally {
-      setIsWorking(false);
-    }
   }
 
   return (
@@ -121,14 +146,20 @@ export default function AdminLogin() {
 
             {bannerErr && <div className="govError">{bannerErr}</div>}
 
-            <button
-              className="govBtn govBtnPrimary"
-              type="submit"
-              disabled={!canSubmit || isWorking}
-              style={{ marginTop: 14 }}
-            >
-              {isWorking ? "Signing in…" : "Sign in to admin panel"}
-            </button>
+            {passkeyToken ? (
+              <button className="govBtn govBtnPrimary" type="button" onClick={() => finishWithPasskey(passkeyToken)} style={{ marginTop: 14 }}>
+                Use your passkey to finish signing in
+              </button>
+            ) : (
+              <button
+                className="govBtn govBtnPrimary"
+                type="submit"
+                disabled={!canSubmit || isWorking}
+                style={{ marginTop: 14 }}
+              >
+                {isWorking ? "Signing in…" : "Sign in to admin panel"}
+              </button>
+            )}
           </form>
 
           <div style={{ marginTop: 16, fontSize: 13 }}>

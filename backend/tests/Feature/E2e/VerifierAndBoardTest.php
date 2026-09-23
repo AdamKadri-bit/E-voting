@@ -126,4 +126,14 @@ class VerifierAndBoardTest extends E2eTestCase
         $this->assertSame('PASS', $summary['Independent verification']);
         @unlink($tmp);
     }
+
+    public function test_public_results_appear_only_after_decryption(): void
+    {
+        $this->withCredentials = false;
+        $this->getJson("/api/elections/{$this->election->id}/results")->assertNotFound()->assertJsonPath('reason', 'not_published');
+        $this->runElection();
+        $r = $this->getJson("/api/elections/{$this->election->id}/results")->assertOk();
+        $this->assertSame(3, array_sum(array_column($r->json('lists'), 'votes')));
+        $this->assertArrayNotHasKey('decode_errors', $r->json());
+    }
 }

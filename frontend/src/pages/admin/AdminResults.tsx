@@ -16,6 +16,10 @@ import { Card, Section, Metric } from "../../components/common/Card";
 import { ElectionStatusStepper, ElectionTimeProgress } from "../../components/admin/ElectionProgress";
 import { TurnoutTimelineChart } from "../../components/admin/TurnoutTimelineChart";
 import { LebanonResultsMap } from "../../components/admin/LebanonResultsMap";
+import { Link } from "react-router-dom";
+import Notice from "../../components/common/Notice";
+import { adminVerify, adminReportUrl } from "../../lib/api";
+import type { VerifierReport } from "../../crypto/verifier";
 
 export default function AdminResults() {
   const [elections, setElections] = useState<AdminElection[]>([]);
@@ -26,6 +30,7 @@ export default function AdminResults() {
   const [chain, setChain] = useState<any | null>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [verification, setVerification] = useState<VerifierReport | null>(null);
 
   useEffect(() => {
     adminListElections()
@@ -46,7 +51,12 @@ export default function AdminResults() {
     adminResults(selected).then(setResults).catch((e) => setErr(e.message));
     adminTurnoutTimeline(selected).then(setTimeline).catch(() => {});
     adminGeoResults(selected).then(setGeo).catch(() => {});
+    setVerification(null);
+    adminVerify(selected).then(setVerification).catch(() => {});
   }, [selected]);
+
+  // End-to-end elections have no results until the trustees decrypt the tally.
+  const e2eHidden = results?.crypto_scheme === "e2e" && !results?.results_available;
 
   async function reverify() {
     setChain(null);
@@ -74,8 +84,22 @@ export default function AdminResults() {
         </select>
       </div>
 
+      {results?.crypto_scheme === "e2e" && (
+        <div style={{ marginBottom: 20, display: "grid", gap: 12 }}>
+          {e2eHidden ? (
+            <Notice kind="info">Results for this election are encrypted. They appear only after polling closes and the trustees decrypt the tally (status: {results.tally_status}). Live turnout and the participation map are on the Overview.</Notice>
+          ) : verification ? (
+            <Notice kind={verification.ok ? "ok" : "error"}>
+              <strong>{verification.ok ? "Verified ✓" : "Verification FAILED"}</strong> — every ballot proof, the homomorphic tally and the trustees' decryption proofs were re-checked.{" "}
+              <Link to={`/verify?election=${selected}`}>Re-run it independently in the browser</Link>.
+            </Notice>
+          ) : null}
+          {selected != null && <a className="gv-btn" href={adminReportUrl(selected)} style={{ justifySelf: "start" }}>Download election report (.xlsx)</a>}
+        </div>
+      )}
+
       {/* Map of Lebanon: turnout and votes per governorate. */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 20, display: e2eHidden ? "none" : undefined }}>
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>Results by region</h2>
@@ -145,7 +169,9 @@ export default function AdminResults() {
                 <Metric label="Turnout" value={`${results.turnout.turnout_percentage}%`} />
               </div>
 
-              {results.lists.length === 0 ? (
+              {e2eHidden ? (
+                <div style={{ color: "var(--gov-muted)" }}>Results are hidden until the tally is decrypted.</div>
+              ) : results.lists.length === 0 ? (
                 <div style={{ color: "var(--gov-muted)" }}>No votes recorded yet.</div>
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>

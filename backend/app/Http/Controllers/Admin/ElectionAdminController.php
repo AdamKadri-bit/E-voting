@@ -108,6 +108,18 @@ class ElectionAdminController extends Controller
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
         ]);
 
+        // End-to-end elections move forward only: once polls have closed the
+        // encrypted tally exists, and reopening would let ballots change after
+        // it was formed. Returning to draft is allowed only before any ballot.
+        if ($election->isE2e() && $data['status'] !== $election->status) {
+            if ($election->status === 'closed') {
+                return response()->json(['message' => 'A closed end-to-end election cannot be reopened.'], 422);
+            }
+            if ($data['status'] === 'draft' && $election->e2eBallots()->exists()) {
+                return response()->json(['message' => 'Ballots have been cast; this election can no longer return to draft.'], 422);
+            }
+        }
+
         // Guard: an incomplete election cannot open for voting. Without a
         // window, constituencies, lists and candidates on those lists, voters
         // would be handed an empty ballot.

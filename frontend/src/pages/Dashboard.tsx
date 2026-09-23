@@ -41,6 +41,9 @@ type DbUser = {
   registry_person_id?: number | string | null;
   verification_status?: string | null;
   can_vote?: boolean;
+  has_voter_profile?: boolean;
+  is_trustee?: boolean;
+  voter_status?: { voter_type: "resident" | "diaspora" | null; residence_country_name: string | null; required: boolean; locked: boolean };
   registry_person?: RegistryPerson | null;
 };
 
@@ -105,6 +108,12 @@ export default function Dashboard() {
         return;
       }
 
+      // Resident/diaspora must be chosen right after sign-in.
+      if (j.user.voter_status?.required) {
+        nav("/voter-status", { replace: true });
+        return;
+      }
+
       setMe(j.user);
     } catch (e: any) {
       // Backend unreachable: we cannot prove a session, so fall back to the guest
@@ -139,9 +148,10 @@ export default function Dashboard() {
   }, []);
 
   const emailVerified = !!me?.email_verified_at || !!me?.email_verified;
-  const registryLinked = !!me?.registry_person_id;
-  const canVote = !!me?.can_vote;
-  const hasVoted = !!me?.registry_person?.has_voted;
+  const registryLinked = !!me?.registry_person_id || !!me?.has_voter_profile;
+  const canVote = !!me?.can_vote || !!me?.has_voter_profile;
+  const status = me?.voter_status;
+  const statusLabel = status?.voter_type === "diaspora" ? `Diaspora · ${status.residence_country_name ?? ""}` : status?.voter_type === "resident" ? "Resident" : "Not set";
 
   const badge = {
     label: emailVerified ? "Verified" : "Unverified",
@@ -158,36 +168,53 @@ export default function Dashboard() {
     ? [
         {
           icon: <Vote size={30} />,
-          title: hasVoted ? "Vote Recorded" : "Vote in Election",
-          description: hasVoted
-            ? "This voter record is already marked as having voted."
-            : canVote
-            ? "Open the active election and cast your ballot through a secure guided flow."
+          title: status?.voter_type === "diaspora" ? "Vote from abroad" : "Vote in Election",
+          description: canVote
+            ? "Your ballot is encrypted in your browser. You can change your vote until polls close — only your last vote counts."
             : "Voting is currently locked for this account.",
           color: "#47a76f",
-          enabled: !hasVoted && canVote,
-          to: !hasVoted && canVote ? "/elections" : undefined,
-          cta: hasVoted ? "Already voted" : canVote ? "Cast ballot" : "Locked",
+          enabled: canVote,
+          to: canVote ? "/elections" : undefined,
+          cta: canVote ? "Open elections" : "Locked",
           featured: true,
         },
         {
           icon: <Eye size={30} />,
-          title: "Verify Your Vote",
-          description: hasVoted
-            ? "Use your receipt hash to confirm your vote was included in the final tally."
-            : "Verification becomes useful after a vote has been recorded.",
+          title: "Verify an Election",
+          description: "Check your tracking code on the public bulletin board, or re-check every proof and the tally yourself.",
           color: "#3b82f6",
-          enabled: hasVoted,
-          to: hasVoted ? "/verify" : undefined,
-          cta: hasVoted ? "Verify receipt" : "Unavailable",
+          enabled: true,
+          to: "/verify",
+          cta: "Open verifier",
         },
         {
           icon: <BarChart3 size={28} />,
-          title: "System Status",
-          description:
-            "Operational metrics and audit signals will appear here in a later phase.",
+          title: "Turnout & Bulletin Board",
+          description: "Live turnout, the map of where voters voted from, and every encrypted ballot.",
           color: "#f59e0b",
-          enabled: false,
+          enabled: true,
+          to: "/board",
+          cta: "Open board",
+        },
+        ...(me?.is_trustee
+          ? [{
+              icon: <ShieldCheck size={28} />,
+              title: "Trustee Duties",
+              description: "Take part in the key ceremony and decrypt the tally after polls close.",
+              color: "#c9a227",
+              enabled: true,
+              to: "/trustee",
+              cta: "Open trustee area",
+            }]
+          : []),
+        {
+          icon: <UserCheck size={28} />,
+          title: `Voter status: ${statusLabel}`,
+          description: status?.locked ? "Locked while an election you can vote in is open." : "Resident or diaspora, and your passkeys for sign-in.",
+          color: "#8b5cf6",
+          enabled: true,
+          to: "/profile",
+          cta: "Open profile",
         },
       ]
     : [
@@ -210,13 +237,25 @@ export default function Dashboard() {
           enabled: false,
           cta: "Locked",
         },
+        ...(me?.is_trustee
+          ? [{
+              icon: <ShieldCheck size={28} />,
+              title: "Trustee Duties",
+              description: "Take part in the key ceremony and decrypt the tally after polls close.",
+              color: "#c9a227",
+              enabled: true,
+              to: "/trustee",
+              cta: "Open trustee area",
+            }]
+          : []),
         {
           icon: <BarChart3 size={28} />,
-          title: "System Status",
-          description:
-            "Operational metrics and audit signals will appear here in a later phase.",
+          title: "Turnout & Bulletin Board",
+          description: "Live turnout, the participation map and every encrypted ballot — public.",
           color: "#f59e0b",
-          enabled: false,
+          enabled: true,
+          to: "/board",
+          cta: "Open board",
         },
       ];
 
@@ -230,17 +269,17 @@ export default function Dashboard() {
         {
           icon: <Vote size={18} />,
           title: "Cast your vote",
-          desc: "Choose your candidate/list and submit your encrypted ballot.",
+          desc: "Choose your list and preferential vote; your browser encrypts it before it leaves.",
         },
         {
           icon: <Receipt size={18} />,
           title: "Get a receipt",
-          desc: "You receive a receipt hash you can keep for later verification.",
+          desc: "Keep your tracking code — or audit the ballot first to check your device.",
         },
         {
           icon: <ShieldCheck size={18} />,
           title: "Verify",
-          desc: "Use your receipt to confirm inclusion in the final tally.",
+          desc: "Find your ballot on the public board and re-check the tally with the verifier.",
         },
       ]
     : [
@@ -279,8 +318,8 @@ export default function Dashboard() {
           icon: <Vote size={18} />,
         },
         {
-          label: "Role",
-          value: me?.role ?? "—",
+          label: "Voter status",
+          value: statusLabel,
           icon: <TrendingUp size={18} />,
         },
       ]
@@ -673,13 +712,13 @@ export default function Dashboard() {
           })}
         </div>
 
-        <div style={{ marginBottom: 28 }}>
-          {(() => {
-            const o = options[2];
+        <div style={{ marginBottom: 28, display: "grid", gap: 12 }}>
+          {options.slice(2).map((o) => {
             const isInteractive = o.enabled && !!o.to;
 
             return (
               <div
+                key={o.title}
                 onClick={() => handleOptionClick(o)}
                 role={isInteractive ? "button" : undefined}
                 tabIndex={isInteractive ? 0 : -1}
@@ -741,7 +780,7 @@ export default function Dashboard() {
                 </Card>
               </div>
             );
-          })()}
+          })}
         </div>
 
         <Section

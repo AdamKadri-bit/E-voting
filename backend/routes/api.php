@@ -34,10 +34,10 @@ Route::get('/ping', function () {
 */
 
 // Per-IP limits; login additionally locks the account with exponential backoff.
-Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
-Route::post('/auth/webauthn/options', [WebAuthnController::class, 'loginOptions'])->middleware('throttle:10,1');
-Route::post('/auth/webauthn/verify', [WebAuthnController::class, 'loginVerify'])->middleware('throttle:10,1');
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/auth/webauthn/options', [WebAuthnController::class, 'loginOptions'])->middleware('throttle:login');
+Route::post('/auth/webauthn/verify', [WebAuthnController::class, 'loginVerify'])->middleware('throttle:login');
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::post('/auth/logout', [AuthController::class, 'logout']);
 
@@ -173,7 +173,7 @@ Route::middleware('jwt.cookie')->group(function () {
     | Cast an encrypted ballot (proofs checked server-side). The old plaintext
     | endpoint is kept only to answer 410 Gone.
     */
-    Route::post('/elections/{election}/ballots', [VoteController::class, 'cast'])->middleware('throttle:20,1');
+    Route::post('/elections/{election}/ballots', [VoteController::class, 'cast'])->middleware('throttle:ballot');
     Route::post('/elections/{election}/vote', [VoteController::class, 'legacy']);
 
     /*
@@ -229,15 +229,16 @@ Route::get('/receipts/{receiptHash}', [ReceiptController::class, 'show']);
 | cookies so a spoiled ballot can't be tied to the voter who audited it.
 */
 
-Route::middleware('throttle:120,1')->group(function () {
+Route::middleware('throttle:board')->group(function () {
     Route::get('/board/elections', [BulletinBoardController::class, 'elections']);
     Route::get('/board/elections/{election}', [BulletinBoardController::class, 'show']);
     Route::get('/board/elections/{election}/ballots', [BulletinBoardController::class, 'ballots']);
     Route::get('/board/elections/{election}/lookup/{code}', [BulletinBoardController::class, 'lookup']);
     Route::get('/elections/{election}/turnout', [BulletinBoardController::class, 'turnout']);
+    Route::get('/elections/{election}/results', [BulletinBoardController::class, 'results']);
 });
-Route::get('/board/elections/{election}/export', [BulletinBoardController::class, 'export'])->middleware('throttle:20,1');
-Route::post('/elections/{election}/audited-ballots', [VoteController::class, 'audit'])->middleware('throttle:10,1');
+Route::get('/board/elections/{election}/export', [BulletinBoardController::class, 'export'])->middleware('throttle:export');
+Route::post('/elections/{election}/audited-ballots', [VoteController::class, 'audit'])->middleware('throttle:audit');
 
 
 /*

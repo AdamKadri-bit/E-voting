@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    // The SPA's origin (FRONTEND_URL), plus any extra comma-separated origins —
+    // the isolated Playwright stack runs on its own port.
+    'allowed_origins' => array_values(array_filter(array_merge(
+        [env('FRONTEND_URL', 'http://localhost:5173')],
+        explode(',', (string) env('CORS_EXTRA_ORIGINS', ''))
+    ))),
 
     'allowed_origins_patterns' => [],
 

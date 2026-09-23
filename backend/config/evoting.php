@@ -37,6 +37,19 @@ return [
     */
     'client_bundle_manifest' => env('EVOTE_CLIENT_BUNDLE_MANIFEST', resource_path('data/client-crypto-bundle.json')),
 
+    /* Per-IP request limits (per minute) for the sensitive endpoints. */
+    'rate_limits' => [
+        'login' => (int) env('EVOTE_RATE_LOGIN', 10),
+        'register' => (int) env('EVOTE_RATE_REGISTER', 5),
+        'ballot' => (int) env('EVOTE_RATE_BALLOT', 20),
+        'audit' => (int) env('EVOTE_RATE_AUDIT', 10),
+        'board' => (int) env('EVOTE_RATE_BOARD', 120),
+        'export' => (int) env('EVOTE_RATE_EXPORT', 20),
+    ],
+
+    /* Where the demo seeder writes the seeded trustees' key files. */
+    'demo_keyfile_dir' => env('EVOTE_DEMO_KEYFILE_DIR', storage_path('app/demo-trustee-keyfiles')),
+
     /* Sign-in hardening. */
     'lockout' => [
         'max_attempts' => 5,
