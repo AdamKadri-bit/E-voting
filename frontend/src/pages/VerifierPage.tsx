@@ -11,6 +11,7 @@ import type { VerifierReport } from "../crypto/verifier";
 import type { BoardExport } from "../crypto/board";
 import { downloadText } from "../lib/download";
 import { useMe } from "../lib/useMe";
+import { errorMessage } from "../lib/errors";
 
 /**
  * Independent verifier, entirely in this browser: downloads the public board
@@ -41,8 +42,8 @@ export default function VerifierPage() {
       const r = await runCrypto<VerifierReport>("verifyBoard", { board: b }, (p, label) => setProgress({ p, label: label ?? "Verifying" }));
       setReport(r);
       setMs(Math.round(performance.now() - t0));
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setProgress(null);
     }
@@ -132,7 +133,7 @@ export default function VerifierPage() {
 
         <div className="gv-card" style={{ marginTop: 18 }}>
           <div className="gv-row" style={{ gap: 6, fontWeight: 900 }}><Terminal size={16} /> Prefer the command line?</div>
-          <pre className="gv-mono" style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>cd frontend && npm run verify -- --election {eid ?? "<id>"} --api {(import.meta as any).env?.VITE_API_URL ?? "http://localhost:8001/api"}</pre>
+          <pre className="gv-mono" style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>cd frontend && npm run verify -- --election {eid ?? "<id>"} --api {import.meta.env.VITE_API_URL ?? "http://localhost:8001/api"}</pre>
         </div>
       </div>
     </DashboardLayout>

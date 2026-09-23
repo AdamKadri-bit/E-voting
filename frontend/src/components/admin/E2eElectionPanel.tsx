@@ -13,6 +13,7 @@ import {
   type AdminElection,
   type CeremonyState,
 } from "../../lib/api";
+import { errorMessage } from "../../lib/errors";
 
 type Candidate = { id: number; name: string; email: string; role: string };
 
@@ -50,8 +51,8 @@ export default function E2eElectionPanel({ election, onChange }: { election: Adm
       setMsg({ kind: "ok", text: ok });
       await load();
       onChange();
-    } catch (e: any) {
-      setMsg({ kind: "error", text: e.message });
+    } catch (e) {
+      setMsg({ kind: "error", text: errorMessage(e) });
     } finally {
       setBusy(false);
     }

@@ -2,9 +2,9 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GovShell from "../ui/GovShell";
-import OAuthButtons from "../ui/OAuthButtons";
+import { errorMessage } from "../lib/errors";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 export default function SignupGov() {
   const navJump = useNavigate();
@@ -63,16 +63,13 @@ export default function SignupGov() {
       navJump("/login", {
         state: { flash: "Account created. Check your email to verify, then sign in." },
       });
-    } catch (e: any) {
-      setBannerErr(e?.message || "Signup failed.");
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Signup failed.");
     } finally {
       setIsWorking(false);
     }
   }
 
-  function onOAuthPick(provider: "google" | "microsoft") {
-    setBannerErr(`OAuth (${provider}) is not wired yet. UI is ready.`);
-  }
 
   return (
     <GovShell
@@ -136,11 +133,7 @@ export default function SignupGov() {
             </button>
           </form>
 
-          <div className="govDivider">or</div>
-
-          <OAuthButtons busy={isWorking} onPick={onOAuthPick} />
-
-          <div style={{ marginTop: 14, fontSize: 13, color: "rgb(175, 120, 24)" }}>
+<div style={{ marginTop: 14, fontSize: 13, color: "rgb(175, 120, 24)" }}>
             Already registered? <Link to="/login">Sign in</Link>
           </div>
         </>

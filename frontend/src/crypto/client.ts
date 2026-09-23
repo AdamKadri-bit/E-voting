@@ -4,7 +4,7 @@
  */
 let worker: Worker | null = null;
 let seq = 0;
-const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void; onProgress?: (p: number, label?: string) => void }>();
+const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void; onProgress?: (p: number, label?: string) => void }>();
 
 function getWorker(): Worker {
   if (!worker) {
@@ -29,10 +29,10 @@ function getWorker(): Worker {
   return worker;
 }
 
-export function runCrypto<T = any>(op: string, args: unknown = {}, onProgress?: (p: number, label?: string) => void): Promise<T> {
+export function runCrypto<T = unknown>(op: string, args: unknown = {}, onProgress?: (p: number, label?: string) => void): Promise<T> {
   const id = ++seq;
   return new Promise<T>((resolve, reject) => {
-    pending.set(id, { resolve, reject, onProgress });
+    pending.set(id, { resolve: resolve as (v: unknown) => void, reject, onProgress });
     getWorker().postMessage({ id, op, args });
   });
 }

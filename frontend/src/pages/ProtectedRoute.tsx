@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
 const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 /**
  * Requires a session. Voters who haven't chosen resident/diaspora yet are sent

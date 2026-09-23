@@ -206,7 +206,7 @@ export function LebanonResultsMap({ data }: { data: GeoResults }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [pinned, setPinned] = useState<string | null>(null);
-  const [cursor, setCursor] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [cursor, setCursor] = useState<{ x: number; y: number; w: number }>({ x: 0, y: 0, w: 0 });
 
   const byCode = useMemo(() => {
     const map = new Map<string, GeoGovernorate>();
@@ -220,7 +220,7 @@ export function LebanonResultsMap({ data }: { data: GeoResults }) {
   function trackCursor(e: React.MouseEvent) {
     const rect = wrapRef.current?.getBoundingClientRect();
     if (!rect) return;
-    setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setCursor({ x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width });
   }
 
   return (
@@ -353,7 +353,7 @@ export function LebanonResultsMap({ data }: { data: GeoResults }) {
           <div
             style={{
               position: "absolute",
-              left: Math.min(cursor.x + 16, (wrapRef.current?.clientWidth ?? 0) - 290),
+              left: Math.min(cursor.x + 16, cursor.w - 290),
               top: cursor.y + 16,
               pointerEvents: "none",
               zIndex: 5,

@@ -165,8 +165,6 @@ export default function AdminOverview() {
 
   useEffect(() => {
     if (selected == null) return;
-    setData(null);
-    setErr(null);
     adminElectionOverview(selected)
       .then(setData)
       .catch((e) => setErr(e.message));
@@ -183,7 +181,15 @@ export default function AdminOverview() {
         {loadingList ? (
           <div style={{ color: "var(--gov-muted)" }}>Loading…</div>
         ) : (
-          <ElectionPicker elections={elections} selected={selected} onSelect={setSelected} />
+          <ElectionPicker
+            elections={elections}
+            selected={selected}
+            onSelect={(id) => {
+              setSelected(id);
+              setData(null);
+              setErr(null);
+            }}
+          />
         )}
       </div>
 

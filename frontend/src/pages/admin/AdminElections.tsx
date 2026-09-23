@@ -15,6 +15,7 @@ import {
 } from "../../lib/api";
 import { Card } from "../../components/common/Card";
 import { STATUS_COLORS } from "../../components/admin/statusColors";
+import { errorMessage } from "../../lib/errors";
 
 function StatusBadge({ status }: { status: string }) {
   const c = STATUS_COLORS[status] ?? "#94a3b8";
@@ -57,7 +58,7 @@ function toDatetimeLocal(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function makeField<T extends Record<string, any>>(
+function makeField<T extends Record<string, string | number | null | undefined>>(
   state: T,
   setState: (s: T) => void
 ) {
@@ -70,7 +71,7 @@ function makeField<T extends Record<string, any>>(
         className="govInput"
         type={type}
         required={required}
-        value={state[key] as any}
+        value={state[key] ?? ""}
         onChange={(e) => setState({ ...state, [key]: e.target.value })}
         style={{
           padding: "10px 12px",
@@ -112,8 +113,8 @@ export default function AdminElections() {
       ]);
       setElections(el.elections);
       setConstituencies(co.constituencies);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -138,8 +139,8 @@ export default function AdminElections() {
       setForm({ ...emptyForm });
       setShowForm(false);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -150,8 +151,8 @@ export default function AdminElections() {
     try {
       await adminSetElectionStatus(el.id, status);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -172,8 +173,8 @@ export default function AdminElections() {
       await adminSyncConstituencies(electionId, Array.from(selectedConsts));
       setEditConstFor(null);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -203,8 +204,8 @@ export default function AdminElections() {
       });
       setEditingId(null);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setEditSaving(false);
     }
@@ -452,7 +453,8 @@ export default function AdminElections() {
                             checked={checked}
                             onChange={(e) => {
                               const next = new Set(selectedConsts);
-                              e.target.checked ? next.add(c.id) : next.delete(c.id);
+                              if (e.target.checked) next.add(c.id);
+                              else next.delete(c.id);
                               setSelectedConsts(next);
                             }}
                           />

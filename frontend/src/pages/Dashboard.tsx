@@ -16,9 +16,10 @@ import {
 
 import DashboardLayout from "../components/layouts/DashboardLayout";
 import { Card, Section } from "../components/common/Card";
+import { errorMessage } from "../lib/errors";
 
 const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 type RegistryPerson = {
   id?: number | string;
@@ -115,12 +116,12 @@ export default function Dashboard() {
       }
 
       setMe(j.user);
-    } catch (e: any) {
+    } catch (e) {
       // Backend unreachable: we cannot prove a session, so fall back to the guest
       // landing instead of rendering a signed-in shell with placeholder values.
       setMe(null);
       setIsGuest(true);
-      setErr(e?.message || "Could not load your session.");
+      setErr(errorMessage(e) || "Could not load your session.");
     } finally {
       setLoading(false);
     }
@@ -798,7 +799,7 @@ export default function Dashboard() {
 
         <Section
           title="System Snapshot"
-          description="High-level signals (placeholder until backend metrics exist)."
+          description="Where your account stands: registry verification, voting access and voter status."
         >
           <div
             style={{
@@ -902,7 +903,7 @@ export default function Dashboard() {
         }
 
         @media (max-width: 960px) {
-          div[style*="repeat(13, minmax(0, 1fr))"] {
+          div[style*="repeat(13,"] {
             grid-template-columns: 1fr !important;
           }
 
@@ -911,11 +912,11 @@ export default function Dashboard() {
             grid-column: auto !important;
           }
 
-          div[style*="repeat(3, minmax(0, 1fr))"] {
+          div[style*="repeat(3,"] {
             grid-template-columns: 1fr !important;
           }
 
-          div[style*="repeat(2, minmax(0, 1fr))"] {
+          div[style*="repeat(2,"] {
             grid-template-columns: 1fr !important;
           }
         }

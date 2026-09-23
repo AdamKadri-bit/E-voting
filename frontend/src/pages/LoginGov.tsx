@@ -2,11 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import GovShell from "../ui/GovShell";
-import OAuthButtons from "../ui/OAuthButtons";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { passkeyLoginOptions, passkeyLoginVerify } from "../lib/api";
+import { errorMessage, errorName } from "../lib/errors";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 export default function LoginGov() {
   const navJump = useNavigate();
@@ -24,7 +24,7 @@ export default function LoginGov() {
   const [passkeyToken, setPasskeyToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const flash = (loc.state as any)?.flash;
+    const flash = (loc.state as { flash?: string } | null)?.flash;
     if (flash) {
       setBannerOk(String(flash));
       // clear state so it doesn't persist on refresh
@@ -83,8 +83,8 @@ export default function LoginGov() {
       }
 
       await afterSession();
-    } catch (e: any) {
-      setBannerErr(e?.message || "Sign in failed.");
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Sign in failed.");
     } finally {
       setIsWorking(false);
     }
@@ -99,8 +99,8 @@ export default function LoginGov() {
       await passkeyLoginVerify(token, credential);
       setPasskeyToken(null);
       await afterSession();
-    } catch (e: any) {
-      setBannerErr(e?.name === "NotAllowedError" ? "Passkey check cancelled. Try again." : e?.message || "Passkey check failed.");
+    } catch (e) {
+      setBannerErr(errorName(e) === "NotAllowedError" ? "Passkey check cancelled. Try again." : errorMessage(e) || "Passkey check failed.");
     }
   }
 
@@ -144,8 +144,6 @@ export default function LoginGov() {
 
     setIsResending(true);
     try {
-      // NOTE: this endpoint must exist on backend.
-      // If your backend route name is different, change it here.
       const res = await fetch(`${API_URL}/auth/resend-verification`, {
         method: "POST",
         headers: { 
@@ -164,16 +162,13 @@ export default function LoginGov() {
       }
 
       setBannerOk("Verification email sent. Check your inbox (and spam).");
-    } catch (e: any) {
-      setBannerErr(e?.message || "Could not resend.");
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Could not resend.");
     } finally {
       setIsResending(false);
     }
   }
 
-  function onOAuthPick(provider: "google" | "microsoft") {
-    setBannerErr(`OAuth (${provider}) is not wired yet. UI is ready.`);
-  }
 
   return (
     <GovShell
@@ -247,9 +242,6 @@ export default function LoginGov() {
             )}
           </form>
 
-          <div className="govDivider">or</div>
-
-          <OAuthButtons busy={isWorking || isResending} onPick={onOAuthPick} />
 
           <div style={{ marginTop: 14, fontSize: 13, color: "rgb(175, 120, 24)" }}>
             No account? <Link to="/signup">Create one</Link>

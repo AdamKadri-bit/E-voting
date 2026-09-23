@@ -12,6 +12,7 @@ import { MIN_PASSPHRASE, type Keyfile } from "../../crypto/keyfile";
 import type { EncryptedShare, Round1Public, Round1Secret, Round3Result } from "../../crypto/threshold";
 import { downloadText } from "../../lib/download";
 import { useMe } from "../../lib/useMe";
+import { errorMessage } from "../../lib/errors";
 
 /**
  * Key ceremony (distributed key generation), run in each trustee's browser.
@@ -41,8 +42,8 @@ export default function KeyCeremonyPage() {
   const load = useCallback(async () => {
     try {
       setState(await ceremonyState(eid));
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }, [eid]);
 
@@ -69,8 +70,8 @@ export default function KeyCeremonyPage() {
       await submitRound1(eid, body);
       setSecret(s);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(null);
       setKdf(null);
@@ -86,8 +87,8 @@ export default function KeyCeremonyPage() {
       await submitRound2(eid, shares);
       setSecret(s);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(null);
     }
@@ -115,8 +116,8 @@ export default function KeyCeremonyPage() {
       );
       setFinalFile(file);
       downloadText(`${fileBase}-decryption-share.evkey`, JSON.stringify(file, null, 2));
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(null);
       setKdf(null);
@@ -128,8 +129,8 @@ export default function KeyCeremonyPage() {
     try {
       await submitRound3(eid, r3!.share_public_key, []);
       await load();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(null);
     }

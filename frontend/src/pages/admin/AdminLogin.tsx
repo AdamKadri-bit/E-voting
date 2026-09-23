@@ -4,9 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import GovShell from "../../ui/GovShell";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { passkeyLoginOptions, passkeyLoginVerify } from "../../lib/api";
+import { errorMessage, errorName } from "../../lib/errors";
 
 const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 /**
  * Dedicated entry point for the admin panel.
@@ -69,8 +70,8 @@ export default function AdminLogin() {
       }
 
       await afterSession();
-    } catch (e: any) {
-      setBannerErr(e?.message || "Sign in failed.");
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Sign in failed.");
     } finally {
       setIsWorking(false);
     }
@@ -83,8 +84,8 @@ export default function AdminLogin() {
       await passkeyLoginVerify(token, await startAuthentication({ optionsJSON: options }));
       setPasskeyToken(null);
       await afterSession();
-    } catch (e: any) {
-      setBannerErr(e?.name === "NotAllowedError" ? "Passkey check cancelled. Try again." : e?.message || "Passkey check failed.");
+    } catch (e) {
+      setBannerErr(errorName(e) === "NotAllowedError" ? "Passkey check cancelled. Try again." : errorMessage(e) || "Passkey check failed.");
     }
   }
 

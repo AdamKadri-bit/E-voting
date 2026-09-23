@@ -6,11 +6,12 @@ import PageHeader from "../components/common/PageHeader";
 import Notice from "../components/common/Notice";
 import ProgressBar from "../components/common/ProgressBar";
 import TrackingCode from "../components/common/TrackingCode";
-import { flag } from "../components/common/CountrySelect";
+import { flag } from "../lib/countries";
 import { ApiError, castEncryptedBallot, getEncryptedBallot, publishAudit, type E2eBallotResponse } from "../lib/api";
 import { runCrypto } from "../crypto/client";
 import { selectionVector, type Manifest } from "../crypto/manifest";
 import { describeSelection, type AuditedBallot, type BallotSecrets, type EncryptedBallot } from "../crypto/ballot";
+import { errorMessage } from "../lib/errors";
 
 type Step = "confirm" | "choose" | "encrypting" | "decide" | "casting" | "audited";
 
@@ -69,8 +70,8 @@ export default function BallotPage() {
       );
       setEnc(out);
       setStep("decide");
-    } catch (e: any) {
-      setCastErr(e.message);
+    } catch (e) {
+      setCastErr(errorMessage(e));
       setStep("choose");
     }
   }
@@ -81,8 +82,8 @@ export default function BallotPage() {
     try {
       const r = await castEncryptedBallot(eid, enc.ballot);
       nav(`/elections/${eid}/receipt/${r.receipt.short_code}`, { replace: true, state: { receipt: r.receipt, encryptMs: enc.ms } });
-    } catch (e: any) {
-      setCastErr(e.message);
+    } catch (e) {
+      setCastErr(errorMessage(e));
       setStep("decide");
     }
   }
@@ -99,8 +100,8 @@ export default function BallotPage() {
     try {
       await publishAudit(eid, record);
       state.published = true;
-    } catch (e: any) {
-      state.error = e.message;
+    } catch (e) {
+      state.error = errorMessage(e);
     }
     setAudit(state);
     setEnc(null); // this ballot is spoiled; its randomness is public now

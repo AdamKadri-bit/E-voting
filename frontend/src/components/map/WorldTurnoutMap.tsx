@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { geoNaturalEarth1, geoPath, geoCentroid } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { GeometryCollection, Topology } from "topojson-specification";
 import world from "world-atlas/countries-110m.json";
 import { Minus, Plus, RotateCcw } from "lucide-react";
-import { COUNTRIES, flag } from "../common/CountrySelect";
+import { COUNTRIES, flag } from "../../lib/countries";
 import type { CountryTurnout } from "../../lib/api";
 
 /**
@@ -22,13 +23,13 @@ const H = 500;
 const RAMP = ["#fde7b0", "#f9c46b", "#f08c3a", "#d9542b", "#a61e1e"];
 
 const byNumeric = new Map(COUNTRIES.map((c) => [c.numeric, c.code]));
-const topo: any = world;
+const topo = world as unknown as Topology<{ countries: GeometryCollection<{ name: string }> }>;
 const shapes = (feature(topo, topo.objects.countries) as unknown as FeatureCollection<Geometry, { name: string }>).features.map((f) => ({
   f,
   code: byNumeric.get(String(f.id).padStart(3, "0")) ?? null,
 }));
 
-const projection = geoNaturalEarth1().fitSize([W, H], { type: "Sphere" } as any);
+const projection = geoNaturalEarth1().fitSize([W, H], { type: "Sphere" });
 const path = geoPath(projection);
 const paths = shapes.map((s) => ({ ...s, d: path(s.f as Feature) ?? "", centroid: projection(geoCentroid(s.f as Feature)) }));
 

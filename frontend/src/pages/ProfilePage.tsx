@@ -5,9 +5,10 @@ import { startRegistration } from "@simplewebauthn/browser";
 import DashboardLayout from "../components/layouts/DashboardLayout";
 import PageHeader from "../components/common/PageHeader";
 import Notice from "../components/common/Notice";
-import { flag } from "../components/common/CountrySelect";
+import { flag } from "../lib/countries";
 import { passkeyDelete, passkeyList, passkeyRegister, passkeyRegisterOptions } from "../lib/api";
 import { useMe } from "../lib/useMe";
+import { errorMessage, errorName } from "../lib/errors";
 
 /** Profile: resident/diaspora status (read-only while locked) and passkeys (WebAuthn). */
 export default function ProfilePage() {
@@ -34,8 +35,8 @@ export default function ProfilePage() {
       setMsg({ kind: "ok", text: "Passkey added. From now on, signing in asks for it after your password." });
       await loadKeys();
       await reload();
-    } catch (e: any) {
-      setMsg({ kind: "error", text: e?.name === "NotAllowedError" ? "Cancelled." : e.message });
+    } catch (e) {
+      setMsg({ kind: "error", text: errorName(e) === "NotAllowedError" ? "Cancelled." : errorMessage(e) });
     } finally {
       setBusy(false);
     }

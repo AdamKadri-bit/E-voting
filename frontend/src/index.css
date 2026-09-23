@@ -200,24 +200,6 @@ button {
   background: var(--gov-edge);
 }
 
-.govOAuthStack {
-  display: grid;
-  gap: 10px;
-}
-
-.govOAuthBtn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.govOAuthLeft {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .govError {
   color: var(--gov-alert);
   font-size: 13px;

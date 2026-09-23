@@ -3,14 +3,17 @@ import { Eye, Search, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-reac
 import DashboardLayout from "../components/layouts/DashboardLayout";
 import { Card } from "../components/common/Card";
 import { verifyBallotChain, verifyReceipt } from "../lib/api";
+import { errorMessage } from "../lib/errors";
+
+type ReceiptCheck = { status?: string; message?: string; block_index?: number; block?: number };
 
 export default function VerifyVotePage() {
   const [hash, setHash] = useState("");
   const [checking, setChecking] = useState(false);
   const [chainChecking, setChainChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [receiptResult, setReceiptResult] = useState<any>(null);
-  const [chainResult, setChainResult] = useState<any>(null);
+  const [receiptResult, setReceiptResult] = useState<ReceiptCheck | null>(null);
+  const [chainResult, setChainResult] = useState<unknown>(null);
 
   const trimmedHash = useMemo(() => hash.trim(), [hash]);
 
@@ -26,9 +29,9 @@ export default function VerifyVotePage() {
 
     try {
       const res = await verifyReceipt(trimmedHash);
-      setReceiptResult(res);
-    } catch (e: any) {
-      setError(e?.message || "Receipt verification failed.");
+      setReceiptResult(res as ReceiptCheck);
+    } catch (e) {
+      setError(errorMessage(e) || "Receipt verification failed.");
     } finally {
       setChecking(false);
     }
@@ -41,8 +44,8 @@ export default function VerifyVotePage() {
     try {
       const res = await verifyBallotChain();
       setChainResult(res);
-    } catch (e: any) {
-      setError(e?.message || "Chain verification failed.");
+    } catch (e) {
+      setError(errorMessage(e) || "Chain verification failed.");
     } finally {
       setChainChecking(false);
     }
@@ -329,7 +332,7 @@ export default function VerifyVotePage() {
                 {chainChecking ? "Checking chain..." : "Verify ballot chain"}
               </button>
 
-              {chainResult && (
+              {chainResult != null && (
                 <div
                   style={{
                     display: "grid",
@@ -371,7 +374,7 @@ export default function VerifyVotePage() {
             grid-template-columns: 1fr !important;
           }
 
-          div[style*="repeat(2, minmax(0, 1fr))"] {
+          div[style*="repeat(2,"] {
             grid-template-columns: 1fr !important;
           }
         }

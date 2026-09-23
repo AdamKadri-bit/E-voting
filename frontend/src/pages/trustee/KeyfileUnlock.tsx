@@ -4,6 +4,7 @@ import Notice from "../../components/common/Notice";
 import ProgressBar from "../../components/common/ProgressBar";
 import { runCrypto } from "../../crypto/client";
 import type { Keyfile } from "../../crypto/keyfile";
+import { errorMessage } from "../../lib/errors";
 
 /** Loads a trustee key file and unlocks it with its passphrase (in the worker). */
 export default function KeyfileUnlock<T>({
@@ -38,8 +39,8 @@ export default function KeyfileUnlock<T>({
     try {
       const secret = await runCrypto<T>("openKeyfile", { file, passphrase: pass }, (p) => setProgress(p));
       await onUnlocked(secret, file);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setProgress(null);
     }

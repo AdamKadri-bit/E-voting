@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../components/layouts/DashboardLayout";
@@ -9,8 +9,10 @@ import {
   getMe,
   type IdentityDocumentType,
   type LebaneseIdOcrData,
+  type IdentityDocumentResult,
   type RegistryLinkPayload,
 } from "../lib/api";
+import { errorMessage } from "../lib/errors";
 
 type DocChoice = IdentityDocumentType | "manual";
 
@@ -105,11 +107,11 @@ function FilePreview({
   disabled: boolean;
   onRemove: () => void;
 }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    if (imgRef.current) imgRef.current.src = url;
 
     return () => URL.revokeObjectURL(url);
   }, [file]);
@@ -128,20 +130,18 @@ function FilePreview({
         background: "rgba(201,162,39,0.08)",
       }}
     >
-      {previewUrl && (
-        <img
-          src={previewUrl}
-          alt={label}
-          style={{
-            width: 58,
-            height: 44,
-            borderRadius: 10,
-            objectFit: "cover",
-            border: "1px solid var(--gov-edge)",
-            background: "rgba(255,255,255,0.06)",
-          }}
-        />
-      )}
+      <img
+        ref={imgRef}
+        alt={label}
+        style={{
+          width: 58,
+          height: 44,
+          borderRadius: 10,
+          objectFit: "cover",
+          border: "1px solid var(--gov-edge)",
+          background: "rgba(255,255,255,0.06)",
+        }}
+      />
 
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 12, color: "var(--gov-muted)" }}>Uploaded</div>
@@ -386,7 +386,7 @@ export default function VoterVerificationPage() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
-  const [extractedData, setExtractedData] = useState<LebaneseIdOcrData | null>(
+  const [extractedData, setExtractedData] = useState<IdentityDocumentResult["data"] | null>(
     null
   );
 
@@ -405,8 +405,8 @@ export default function VoterVerificationPage() {
   // which is what the 422 from the link endpoint used to mean.
   useEffect(() => {
     getMe()
-      .then((res: any) => {
-        if (res?.user?.registry_person_id) setAlreadyLinked(true);
+      .then((res) => {
+        if ((res as { user?: { registry_person_id?: number | null } })?.user?.registry_person_id) setAlreadyLinked(true);
       })
       .catch(() => {
         /* not fatal: the flow still works, it just can't warn early */
@@ -488,8 +488,8 @@ export default function VoterVerificationPage() {
           "The registry number was not read from the back of the ID. You can add it below, or upload a sharper photo."
         );
       }
-    } catch (e: any) {
-      setErr(e?.message || "Could not extract document information.");
+    } catch (e) {
+      setErr(errorMessage(e) || "Could not extract document information.");
     } finally {
       setOcrLoading(false);
       setProgress(null);
@@ -526,8 +526,8 @@ export default function VoterVerificationPage() {
       setTimeout(() => {
         nav("/dashboard", { replace: true });
       }, 800);
-    } catch (e: any) {
-      setErr(e?.message || "Verification failed.");
+    } catch (e) {
+      setErr(errorMessage(e) || "Verification failed.");
     } finally {
       setVerifying(false);
     }
@@ -827,7 +827,7 @@ export default function VoterVerificationPage() {
                     <>
                       <ReadOnlyField label="Place of birth" value={extractedData.place_of_birth} />
                       {docType === "passport" ? (
-                        <ReadOnlyField label="Passport number" value={(extractedData as any).passport_number} />
+                        <ReadOnlyField label="Passport number" value={extractedData.passport_number} />
                       ) : (
                         <ReadOnlyField label="National ID number" value={extractedData.national_id_number} />
                       )}

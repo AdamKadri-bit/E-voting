@@ -1,11 +1,11 @@
 # Secure E-Voting System
 
 ## Tech Stack
-- Frontend: React (Vite)
-- Backend: Laravel (PHP)
-- Database: MySQL
-- Hosting: AWS
-- Blockchain: Permissioned (Hash Anchoring Only)
+- Frontend: React 19 + TypeScript (Vite); ballot cryptography with @noble/curves (ristretto255) in a Web Worker
+- Backend: Laravel 12 (PHP 8.3); server-side cryptography with libsodium (ext-sodium)
+- Database: MySQL in deployment, SQLite for local development and tests
+- Identity documents: Google Cloud Vision OCR (national ID, ikhraj qayd, passport)
+- Integrity: end-to-end verifiable ballots, a public bulletin board and an independent verifier (see `docs/DIASPORA_AND_E2E.md`)
 
 ## Project Goal
 Build a secure, auditable, and transparent electronic voting system with multi-layer trust architecture.

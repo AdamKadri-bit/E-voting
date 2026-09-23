@@ -10,6 +10,7 @@ import { type Ciphertext, type CiphertextPoints, encrypt, fromJson, sub, sum, to
 import { hashItems, shortTrackingCode } from "./encoding";
 import { type Manifest, type ManifestConstraint, constraintValue, manifestHash, satisfies } from "./manifest";
 import { type ExactProof, type RangeProof, exactProve, exactVerify, rangeProve, rangeVerify } from "./proofs";
+import { errorMessage } from "../lib/errors";
 
 export type EncryptedBallot = {
   election_id: number;
@@ -143,13 +144,13 @@ export function verifyBallot(manifest: Manifest, jointPkHex: string, b: Encrypte
     for (let k = 0; k < manifest.constraints.length; k++) {
       const c = manifest.constraints[k];
       const ct = constraintCiphertext(c, cts);
-      const p = b.constraint_proofs[k] as any;
-      const ok = c.type === "exact" ? exactVerify(ctx, H, ct, c.value, p) : rangeVerify(ctx, H, ct, constraintMax(c), p);
+      const p = b.constraint_proofs[k];
+      const ok = c.type === "exact" ? exactVerify(ctx, H, ct, c.value, p as ExactProof) : rangeVerify(ctx, H, ct, constraintMax(c), p as RangeProof);
       if (!ok) return { ok: false, reason: `constraint ${k} (${c.type}) violated` };
     }
     return { ok: true };
-  } catch (e: any) {
-    return { ok: false, reason: e?.message || "malformed ballot" };
+  } catch (e) {
+    return { ok: false, reason: errorMessage(e) || "malformed ballot" };
   }
 }
 
@@ -183,8 +184,8 @@ export function verifyAudit(manifest: Manifest, jointPkHex: string, a: AuditedBa
         return { ok: false, reason: `option ${i} does not encrypt the claimed choice` };
     }
     return { ok: true };
-  } catch (e: any) {
-    return { ok: false, reason: e?.message || "malformed audit" };
+  } catch (e) {
+    return { ok: false, reason: errorMessage(e) || "malformed audit" };
   }
 }
 

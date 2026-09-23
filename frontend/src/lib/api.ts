@@ -1,3 +1,4 @@
+import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import type { Manifest } from "../crypto/manifest";
 import type { AuditedBallot, EncryptedBallot } from "../crypto/ballot";
 import type { BoardExport } from "../crypto/board";
@@ -13,7 +14,7 @@ async function parseJsonSafe(res: Response) {
   }
 }
 
-async function handle<T = any>(res: Response): Promise<T> {
+async function handle<T = unknown>(res: Response): Promise<T> {
   const data = await parseJsonSafe(res);
 
   if (!res.ok) {
@@ -107,7 +108,7 @@ export function extractLebaneseIdOcr(
     xhr.upload.onload = () => onProgress?.(100);
 
     xhr.onload = () => {
-      let data: any = null;
+      let data: { errors?: Record<string, string[]>; message?: string } | null = null;
       try {
         data = JSON.parse(xhr.responseText);
       } catch {
@@ -115,7 +116,7 @@ export function extractLebaneseIdOcr(
       }
 
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(data);
+        resolve(data as { ok: boolean; data: LebaneseIdOcrData });
         return;
       }
 
@@ -175,14 +176,14 @@ export function extractIdentityDocument(
     };
     xhr.upload.onload = () => onProgress?.(100);
     xhr.onload = () => {
-      let data: any = null;
+      let data: { errors?: Record<string, string[]>; message?: string } | null = null;
       try {
         data = JSON.parse(xhr.responseText);
       } catch {
         /* handled below */
       }
       if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(data);
+        resolve(data as IdentityDocumentResult);
         return;
       }
       const fieldErrors: string[] = data?.errors ? Object.values(data.errors as Record<string, string[]>).flat() : [];
@@ -194,7 +195,7 @@ export function extractIdentityDocument(
   });
 }
 
-export async function linkRegistry(payload: RegistryLinkPayload) {
+export async function linkRegistry(payload: RegistryLinkPayload): Promise<{ message?: string }> {
   const res = await fetch(`${API}/registry/link`, {
     method: "POST",
     credentials: "include",
@@ -263,7 +264,7 @@ export async function verifyBallotChain() {
  * Admin API (all routes require an admin session; server-guarded)
  * ======================================================================== */
 
-async function adminReq<T = any>(
+async function adminReq<T = unknown>(
   path: string,
   method: string = "GET",
   body?: unknown
@@ -395,9 +396,27 @@ export const adminListConstituencies = () =>
 export const adminSyncConstituencies = (id: number, constituency_ids: number[]) =>
   adminReq(`/elections/${id}/constituencies`, "PUT", { constituency_ids });
 
+export type AdminConstituencyRef = { id: number; name_en?: string | null; code?: string | null };
+
+export type AdminCandidacy = {
+  id: number;
+  candidate_profile?: { full_name?: string | null } | null;
+  constituency?: AdminConstituencyRef | null;
+};
+
+export type AdminListMember = { id: number; candidacy_id: number; candidacy?: AdminCandidacy | null };
+
+export type AdminList = {
+  id: number;
+  list_name?: string | null;
+  list_name_en?: string | null;
+  constituency?: AdminConstituencyRef | null;
+  list_candidates?: AdminListMember[];
+};
+
 // Lists
 export const adminListLists = (electionId: number) =>
-  adminReq<{ lists: any[] }>(`/elections/${electionId}/lists`);
+  adminReq<{ lists: AdminList[] }>(`/elections/${electionId}/lists`);
 export const adminCreateList = (
   electionId: number,
   payload: {
@@ -412,7 +431,7 @@ export const adminUpdateList = (listId: number, payload: Record<string, unknown>
 export const adminDeleteList = (listId: number) =>
   adminReq(`/lists/${listId}`, "DELETE");
 export const adminAvailableCandidacies = (listId: number) =>
-  adminReq<{ candidacies: any[] }>(`/lists/${listId}/available-candidacies`);
+  adminReq<{ candidacies: AdminCandidacy[] }>(`/lists/${listId}/available-candidacies`);
 export const adminAddCandidate = (
   listId: number,
   payload: { candidacy_id: number; position_order?: number | null }
@@ -422,7 +441,7 @@ export const adminRemoveCandidate = (listId: number, listCandidateId: number) =>
 
 // Candidacies
 export const adminListCandidacies = (electionId: number) =>
-  adminReq<{ candidacies: any[] }>(`/elections/${electionId}/candidacies`);
+  adminReq<{ candidacies: AdminCandidacy[] }>(`/elections/${electionId}/candidacies`);
 export const adminCreateCandidacy = (
   electionId: number,
   payload: {
@@ -494,8 +513,27 @@ export const adminExportUrl = (electionId: number) =>
   `${API}/admin/elections/${electionId}/export`;
 
 // Results & audit
+export type AdminResultsData = {
+  crypto_scheme?: string;
+  results_available?: boolean;
+  tally_status?: string;
+  election: { status: string; starts_at?: string | null; ends_at?: string | null };
+  lists: { list_id: number; list_name: string; votes: number; percentage: number }[];
+  preferential_candidates: { candidacy_id: number; candidate_name: string; votes: number }[];
+  turnout: { registered: number; voted: number; ballots_recorded: number; turnout_percentage: number };
+};
+
+export type ChainVerification = { valid: boolean; verified_ballots?: number; message?: string };
+
+export type AuditLogEntry = {
+  id: number;
+  action: string;
+  actor?: { email?: string | null } | null;
+  created_at: string;
+};
+
 export const adminResults = (electionId: number) =>
-  adminReq(`/elections/${electionId}/results`);
+  adminReq<AdminResultsData>(`/elections/${electionId}/results`);
 
 export type GeoListResult = {
   list_id?: number;
@@ -579,14 +617,14 @@ export type TurnoutTimeline = {
 export const adminTurnoutTimeline = (electionId: number, buckets = 24) =>
   adminReq<TurnoutTimeline>(`/elections/${electionId}/turnout-timeline?buckets=${buckets}`);
 export const adminAuditLogs = (perPage = 25) =>
-  adminReq(`/audit/logs?per_page=${perPage}`);
-export const adminVerifyChain = () => adminReq(`/audit/chain`);
+  adminReq<{ data?: AuditLogEntry[] }>(`/audit/logs?per_page=${perPage}`);
+export const adminVerifyChain = () => adminReq<ChainVerification>(`/audit/chain`);
 /* ==========================================================================
  * Voter status, encrypted voting, bulletin board, trustees, passkeys
  * ======================================================================== */
 
 
-async function req<T = any>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
+async function req<T = unknown>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method,
     credentials: withCookies ? "include" : "omit",
@@ -607,7 +645,7 @@ export class ApiError extends Error {
   }
 }
 
-async function reqWithReason<T = any>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
+async function reqWithReason<T = unknown>(path: string, method = "GET", body?: unknown, withCookies = true): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     method,
     credentials: withCookies ? "include" : "omit",
@@ -644,7 +682,7 @@ export type MeUser = {
   voter_status: VoterStatus;
   is_trustee: boolean;
   passkeys: number;
-  registry_person?: any;
+  registry_person?: Record<string, unknown> | null;
 };
 
 export const fetchMe = () => req<{ ok: boolean; user: MeUser }>("/me");
@@ -840,10 +878,10 @@ export const adminSetDiaspora = (e: AdminElection, enabled: boolean) =>
 /* ---- Passkeys (WebAuthn) ---- */
 
 export const passkeyList = () => req<{ credentials: { id: number; name: string; created_at: string; last_used_at: string | null }[] }>("/webauthn/credentials");
-export const passkeyRegisterOptions = () => req<{ options: any }>("/webauthn/register/options", "POST");
+export const passkeyRegisterOptions = () => req<{ options: PublicKeyCredentialCreationOptionsJSON }>("/webauthn/register/options", "POST");
 export const passkeyRegister = (credential: unknown, name: string) => req("/webauthn/register", "POST", { credential, name });
 export const passkeyDelete = (id: number) => req(`/webauthn/credentials/${id}`, "DELETE");
-export const passkeyLoginOptions = (challenge_token: string) => req<{ options: any }>("/auth/webauthn/options", "POST", { challenge_token });
+export const passkeyLoginOptions = (challenge_token: string) => req<{ options: PublicKeyCredentialRequestOptionsJSON }>("/auth/webauthn/options", "POST", { challenge_token });
 export const passkeyLoginVerify = (challenge_token: string, credential: unknown) => req("/auth/webauthn/verify", "POST", { challenge_token, credential });
 
 export type PublicResults = {

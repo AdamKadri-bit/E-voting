@@ -16,7 +16,7 @@ export default function E2eReceiptPage() {
   const { electionId, code } = useParams();
   const eid = Number(electionId);
   const loc = useLocation();
-  const receipt = (loc.state as any)?.receipt as CastReceipt | undefined;
+  const receipt = (loc.state as { receipt?: CastReceipt } | null)?.receipt;
   const [row, setRow] = useState<BoardRow | null>(null);
   const [err, setErr] = useState<string | null>(null);
 

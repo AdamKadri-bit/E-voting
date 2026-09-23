@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Globe2, Users, Plane, Home, TriangleAlert, RefreshCw } from "lucide-react";
 import WorldTurnoutMap from "../map/WorldTurnoutMap";
-import { flag } from "../common/CountrySelect";
+import { flag } from "../../lib/countries";
 import Notice from "../common/Notice";
 import { adminParticipation, publicTurnout, type Turnout } from "../../lib/api";
+import { errorMessage } from "../../lib/errors";
 
 const POLL_MS = 15000;
 
@@ -28,8 +29,8 @@ export default function TurnoutPanel({ electionId, admin = false }: { electionId
         setData(d);
         setErr(null);
         if (d.election.status === "active") timer = setTimeout(load, POLL_MS);
-      } catch (e: any) {
-        if (alive) setErr(e.message);
+      } catch (e) {
+        if (alive) setErr(errorMessage(e));
       }
     };
     load();

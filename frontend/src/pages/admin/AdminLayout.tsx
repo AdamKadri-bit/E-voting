@@ -14,7 +14,7 @@ import {
 import { useGovTheme } from "../../ui/useGovTheme";
 
 const API_URL =
-  (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: <LayoutDashboard size={18} />, end: true },

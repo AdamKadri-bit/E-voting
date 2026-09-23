@@ -7,6 +7,7 @@ import Notice from "../components/common/Notice";
 import CountrySelect from "../components/common/CountrySelect";
 import { setVoterStatus } from "../lib/api";
 import { useMe } from "../lib/useMe";
+import { errorMessage } from "../lib/errors";
 
 /**
  * Mandatory step after sign-in for voters who haven't said whether they vote
@@ -20,7 +21,7 @@ export default function VoterStatusPage() {
   const [country, setCountry] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const next = (loc.state as any)?.next ?? "/dashboard";
+  const next = (loc.state as { next?: string } | null)?.next ?? "/dashboard";
 
   useEffect(() => {
     if (me?.voter_status) {
@@ -39,8 +40,8 @@ export default function VoterStatusPage() {
     try {
       await setVoterStatus(type!, type === "diaspora" ? country : null);
       nav(next, { replace: true });
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(false);
     }
