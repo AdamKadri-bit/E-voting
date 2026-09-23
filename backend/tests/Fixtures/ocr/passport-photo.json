@@ -1,0 +1,279 @@
+{
+    "source": "Google Cloud Vision DOCUMENT_TEXT_DETECTION on a FICTIONAL specimen (frontend-rendered, marked SPECIMEN), recorded 2026-09-23",
+    "text": "نموذج . SPECIMEN\nالجمهورية اللبنانية - REPUBLIC OF LEBANON\nType P Code LBN No. RL1234567\nحداد \/ HADDAD : الشهرة \/ Surname\nرامي جورج \/ RAMI GEORGES : الاسم \/ Given names\nPASSPORT\nPHOTO\nNationality: LEBANESE\nDate of birth\/15 JAN 1990\nSex: M Place of birth: BEIRUT\nDate of expiry: 20 MAY 2031\nP<LBNHADDAD<<RAMI<GEORGES<<<<<\n<<<<<<<<<<<<\nRL12345670LBN9001158M3105205<<<<<<<<<<<<<<04",
+    "items": [
+        {
+            "text": "نموذج . SPECIMEN",
+            "box": [
+                [
+                    1165,
+                    114
+                ],
+                [
+                    1710,
+                    0
+                ],
+                [
+                    1728,
+                    60
+                ],
+                [
+                    1182,
+                    188
+                ]
+            ]
+        },
+        {
+            "text": "الجمهورية اللبنانية - REPUBLIC OF LEBANON",
+            "box": [
+                [
+                    74,
+                    113
+                ],
+                [
+                    783,
+                    86
+                ],
+                [
+                    785,
+                    125
+                ],
+                [
+                    75,
+                    152
+                ]
+            ]
+        },
+        {
+            "text": "Type P Code LBN No. RL1234567",
+            "box": [
+                [
+                    377,
+                    152
+                ],
+                [
+                    850,
+                    134
+                ],
+                [
+                    851,
+                    164
+                ],
+                [
+                    378,
+                    182
+                ]
+            ]
+        },
+        {
+            "text": "حداد \/ HADDAD : الشهرة \/ Surname",
+            "box": [
+                [
+                    504,
+                    226
+                ],
+                [
+                    954,
+                    208
+                ],
+                [
+                    955,
+                    237
+                ],
+                [
+                    505,
+                    255
+                ]
+            ]
+        },
+        {
+            "text": "رامي جورج \/ RAMI GEORGES : الاسم \/ Given names",
+            "box": [
+                [
+                    506,
+                    287
+                ],
+                [
+                    1188,
+                    264
+                ],
+                [
+                    1189,
+                    295
+                ],
+                [
+                    507,
+                    318
+                ]
+            ]
+        },
+        {
+            "text": "PASSPORT",
+            "box": [
+                [
+                    74,
+                    164
+                ],
+                [
+                    229,
+                    158
+                ],
+                [
+                    230,
+                    188
+                ],
+                [
+                    75,
+                    194
+                ]
+            ]
+        },
+        {
+            "text": "PHOTO",
+            "box": [
+                [
+                    232,
+                    449
+                ],
+                [
+                    312,
+                    447
+                ],
+                [
+                    312,
+                    465
+                ],
+                [
+                    232,
+                    467
+                ]
+            ]
+        },
+        {
+            "text": "Nationality: LEBANESE",
+            "box": [
+                [
+                    509,
+                    349
+                ],
+                [
+                    844,
+                    332
+                ],
+                [
+                    845,
+                    363
+                ],
+                [
+                    511,
+                    380
+                ]
+            ]
+        },
+        {
+            "text": "Date of birth\/15 JAN 1990",
+            "box": [
+                [
+                    511,
+                    408
+                ],
+                [
+                    1039,
+                    389
+                ],
+                [
+                    1040,
+                    415
+                ],
+                [
+                    512,
+                    434
+                ]
+            ]
+        },
+        {
+            "text": "Sex: M Place of birth: BEIRUT Date of expiry: 20 MAY 2031",
+            "box": [
+                [
+                    512,
+                    469
+                ],
+                [
+                    1102,
+                    445
+                ],
+                [
+                    1105,
+                    535
+                ],
+                [
+                    516,
+                    559
+                ]
+            ]
+        },
+        {
+            "text": "P<LBNHADDAD<<RAMI<GEORGES<<<<<",
+            "box": [
+                [
+                    115,
+                    1160
+                ],
+                [
+                    964,
+                    1128
+                ],
+                [
+                    965,
+                    1157
+                ],
+                [
+                    116,
+                    1189
+                ]
+            ]
+        },
+        {
+            "text": "<<<<<<<<<<<<",
+            "box": [
+                [
+                    1034,
+                    1127
+                ],
+                [
+                    1375,
+                    1115
+                ],
+                [
+                    1376,
+                    1142
+                ],
+                [
+                    1035,
+                    1154
+                ]
+            ]
+        },
+        {
+            "text": "RL12345670LBN9001158M3105205<<<<<<<<<<<<<<04",
+            "box": [
+                [
+                    115,
+                    1218
+                ],
+                [
+                    1377,
+                    1171
+                ],
+                [
+                    1378,
+                    1204
+                ],
+                [
+                    116,
+                    1251
+                ]
+            ]
+        }
+    ]
+}

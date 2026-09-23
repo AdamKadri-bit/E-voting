@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Only substitutes type-hinted model params, so existing routes that
             // take raw string params are unaffected.
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
         
         $middleware->alias([

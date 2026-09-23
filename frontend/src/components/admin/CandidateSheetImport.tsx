@@ -8,6 +8,7 @@ import {
   type ImportPreview,
   type ImportResult,
 } from "../../lib/api";
+import { errorMessage } from "../../lib/errors";
 
 const COLUMNS = [
   "constituency",
@@ -88,8 +89,8 @@ export function CandidateSheetImport({
     setBusy(true);
     try {
       setPreview(await adminImportPreview(electionId, selected));
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -106,8 +107,8 @@ export function CandidateSheetImport({
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       onImported();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(false);
     }

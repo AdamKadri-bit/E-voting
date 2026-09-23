@@ -11,21 +11,30 @@ import {
   type AdminElection,
   type GeoResults,
   type TurnoutTimeline,
+  type AdminResultsData,
+  type ChainVerification,
+  type AuditLogEntry,
 } from "../../lib/api";
 import { Card, Section, Metric } from "../../components/common/Card";
 import { ElectionStatusStepper, ElectionTimeProgress } from "../../components/admin/ElectionProgress";
 import { TurnoutTimelineChart } from "../../components/admin/TurnoutTimelineChart";
 import { LebanonResultsMap } from "../../components/admin/LebanonResultsMap";
+import { Link } from "react-router-dom";
+import Notice from "../../components/common/Notice";
+import { adminVerify, adminReportUrl } from "../../lib/api";
+import type { VerifierReport } from "../../crypto/verifier";
+import { errorMessage } from "../../lib/errors";
 
 export default function AdminResults() {
   const [elections, setElections] = useState<AdminElection[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [results, setResults] = useState<any | null>(null);
+  const [results, setResults] = useState<AdminResultsData | null>(null);
   const [timeline, setTimeline] = useState<TurnoutTimeline | null>(null);
   const [geo, setGeo] = useState<GeoResults | null>(null);
-  const [chain, setChain] = useState<any | null>(null);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [chain, setChain] = useState<ChainVerification | null>(null);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [verification, setVerification] = useState<VerifierReport | null>(null);
 
   useEffect(() => {
     adminListElections()
@@ -35,25 +44,34 @@ export default function AdminResults() {
       })
       .catch((e) => setErr(e.message));
     adminVerifyChain().then(setChain).catch(() => {});
-    adminAuditLogs(15).then((d: any) => setLogs(d.data ?? [])).catch(() => {});
+    adminAuditLogs(15).then((d) => setLogs(d.data ?? [])).catch(() => {});
   }, []);
 
   useEffect(() => {
     if (selected == null) return;
-    setResults(null);
-    setTimeline(null);
-    setGeo(null);
     adminResults(selected).then(setResults).catch((e) => setErr(e.message));
     adminTurnoutTimeline(selected).then(setTimeline).catch(() => {});
     adminGeoResults(selected).then(setGeo).catch(() => {});
+    adminVerify(selected).then(setVerification).catch(() => {});
   }, [selected]);
+
+  // End-to-end elections have no results until the trustees decrypt the tally.
+  const e2eHidden = results?.crypto_scheme === "e2e" && !results?.results_available;
+
+  function choose(id: number) {
+    setSelected(id);
+    setResults(null);
+    setTimeline(null);
+    setGeo(null);
+    setVerification(null);
+  }
 
   async function reverify() {
     setChain(null);
     try {
       setChain(await adminVerifyChain());
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -65,7 +83,7 @@ export default function AdminResults() {
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
         <select
           value={selected ?? ""}
-          onChange={(e) => setSelected(Number(e.target.value))}
+          onChange={(e) => choose(Number(e.target.value))}
           style={{ padding: "9px 12px", borderRadius: 10, border: "1px solid var(--gov-edge)", background: "var(--gov-card2, rgba(255,255,255,0.03))", color: "var(--gov-ink)" }}
         >
           {elections.map((el) => (
@@ -74,8 +92,22 @@ export default function AdminResults() {
         </select>
       </div>
 
+      {results?.crypto_scheme === "e2e" && (
+        <div style={{ marginBottom: 20, display: "grid", gap: 12 }}>
+          {e2eHidden ? (
+            <Notice kind="info">Results for this election are encrypted. They appear only after polling closes and the trustees decrypt the tally (status: {results.tally_status}). Live turnout and the participation map are on the Overview.</Notice>
+          ) : verification ? (
+            <Notice kind={verification.ok ? "ok" : "error"}>
+              <strong>{verification.ok ? "Verified ✓" : "Verification FAILED"}</strong> — every ballot proof, the homomorphic tally and the trustees' decryption proofs were re-checked.{" "}
+              <Link to={`/verify?election=${selected}`}>Re-run it independently in the browser</Link>.
+            </Notice>
+          ) : null}
+          {selected != null && <a className="gv-btn" href={adminReportUrl(selected)} style={{ justifySelf: "start" }}>Download election report (.xlsx)</a>}
+        </div>
+      )}
+
       {/* Map of Lebanon: turnout and votes per governorate. */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 20, display: e2eHidden ? "none" : undefined }}>
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>Results by region</h2>
@@ -145,11 +177,13 @@ export default function AdminResults() {
                 <Metric label="Turnout" value={`${results.turnout.turnout_percentage}%`} />
               </div>
 
-              {results.lists.length === 0 ? (
+              {e2eHidden ? (
+                <div style={{ color: "var(--gov-muted)" }}>Results are hidden until the tally is decrypted.</div>
+              ) : results.lists.length === 0 ? (
                 <div style={{ color: "var(--gov-muted)" }}>No votes recorded yet.</div>
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>
-                  {results.lists.map((l: any) => (
+                  {results.lists.map((l) => (
                     <div key={l.list_id}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
                         <span style={{ fontWeight: 700 }}>{l.list_name}</span>
@@ -167,7 +201,7 @@ export default function AdminResults() {
                 <div style={{ marginTop: 20 }}>
                   <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>Preferential candidates</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {results.preferential_candidates.map((c: any) => (
+                    {results.preferential_candidates.map((c) => (
                       <span key={c.candidacy_id} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 999, border: "1px solid var(--gov-edge)" }}>
                         {c.candidate_name}: <b>{c.votes}</b>
                       </span>

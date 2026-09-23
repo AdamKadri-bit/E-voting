@@ -31,6 +31,9 @@ class DatabaseSeeder extends Seeder
             \Database\Seeders\TestVoterSeeder::class,
             \Database\Seeders\AdminUserSeeder::class,
 
+            // Diaspora + end-to-end verifiable voting demo (elections, trustees, voters).
+            \Database\Seeders\DemoE2eSeeder::class,
+
         ]);
     }
 }

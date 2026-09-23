@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import TurnoutPanel from "../../components/analytics/TurnoutPanel";
 import {
   Vote,
   Users,
@@ -164,8 +165,6 @@ export default function AdminOverview() {
 
   useEffect(() => {
     if (selected == null) return;
-    setData(null);
-    setErr(null);
     adminElectionOverview(selected)
       .then(setData)
       .catch((e) => setErr(e.message));
@@ -182,7 +181,15 @@ export default function AdminOverview() {
         {loadingList ? (
           <div style={{ color: "var(--gov-muted)" }}>Loading…</div>
         ) : (
-          <ElectionPicker elections={elections} selected={selected} onSelect={setSelected} />
+          <ElectionPicker
+            elections={elections}
+            selected={selected}
+            onSelect={(id) => {
+              setSelected(id);
+              setData(null);
+              setErr(null);
+            }}
+          />
         )}
       </div>
 
@@ -285,6 +292,14 @@ export default function AdminOverview() {
             </div>
 
             <ReadinessPanel data={data} />
+
+            {/* Live turnout and where voters voted from — never results. */}
+            {data.election.crypto_scheme !== "legacy" && (
+              <Card>
+                <h2 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 900 }}>Turnout & participation map</h2>
+                <TurnoutPanel electionId={data.election.id} admin />
+              </Card>
+            )}
 
             <Card>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

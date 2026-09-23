@@ -2,9 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import GovShell from "../ui/GovShell";
-import OAuthButtons from "../ui/OAuthButtons";
+import { startAuthentication } from "@simplewebauthn/browser";
+import { passkeyLoginOptions, passkeyLoginVerify } from "../lib/api";
+import { errorMessage, errorName } from "../lib/errors";
 
-const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
 
 export default function LoginGov() {
   const navJump = useNavigate();
@@ -18,9 +20,11 @@ export default function LoginGov() {
   const [bannerErr, setBannerErr] = useState<string | null>(null);
   const [bannerOk, setBannerOk] = useState<string | null>(null);
   const [needVerify, setNeedVerify] = useState(false);
+  // Set when the account has a passkey: sign-in finishes only after it is used.
+  const [passkeyToken, setPasskeyToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const flash = (loc.state as any)?.flash;
+    const flash = (loc.state as { flash?: string } | null)?.flash;
     if (flash) {
       setBannerOk(String(flash));
       // clear state so it doesn't persist on refresh
@@ -61,6 +65,12 @@ export default function LoginGov() {
 
       const j = await res.json().catch(() => null);
 
+      if (res.ok && j?.two_factor === "webauthn") {
+        setPasskeyToken(j.challenge_token);
+        await finishWithPasskey(j.challenge_token);
+        return;
+      }
+
       if (!res.ok) {
         const msg = j?.message || `Sign in failed (${res.status}).`;
         if (res.status === 403) {
@@ -72,7 +82,30 @@ export default function LoginGov() {
         return;
       }
 
-      // The login response only sets the cookie; the role lives inside the JWT,
+      await afterSession();
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Sign in failed.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  /** Second step for passkey accounts: the browser signs the server's challenge. */
+  async function finishWithPasskey(token: string) {
+    setBannerErr(null);
+    try {
+      const { options } = await passkeyLoginOptions(token);
+      const credential = await startAuthentication({ optionsJSON: options });
+      await passkeyLoginVerify(token, credential);
+      setPasskeyToken(null);
+      await afterSession();
+    } catch (e) {
+      setBannerErr(errorName(e) === "NotAllowedError" ? "Passkey check cancelled. Try again." : errorMessage(e) || "Passkey check failed.");
+    }
+  }
+
+  async function afterSession() {
+    // The login response only sets the cookie; the role lives inside the JWT,
       // so ask the server which panel this account belongs to.
       const meRes = await fetch(`${API_URL}/me`, {
         method: "GET",
@@ -96,12 +129,7 @@ export default function LoginGov() {
         return;
       }
 
-      navJump("/dashboard", { replace: true });
-    } catch (e: any) {
-      setBannerErr(e?.message || "Sign in failed.");
-    } finally {
-      setIsWorking(false);
-    }
+      navJump(me?.user?.voter_status?.required ? "/voter-status" : "/dashboard", { replace: true });
   }
 
   async function onResendVerify() {
@@ -116,8 +144,6 @@ export default function LoginGov() {
 
     setIsResending(true);
     try {
-      // NOTE: this endpoint must exist on backend.
-      // If your backend route name is different, change it here.
       const res = await fetch(`${API_URL}/auth/resend-verification`, {
         method: "POST",
         headers: { 
@@ -136,16 +162,13 @@ export default function LoginGov() {
       }
 
       setBannerOk("Verification email sent. Check your inbox (and spam).");
-    } catch (e: any) {
-      setBannerErr(e?.message || "Could not resend.");
+    } catch (e) {
+      setBannerErr(errorMessage(e) || "Could not resend.");
     } finally {
       setIsResending(false);
     }
   }
 
-  function onOAuthPick(provider: "google" | "microsoft") {
-    setBannerErr(`OAuth (${provider}) is not wired yet. UI is ready.`);
-  }
 
   return (
     <GovShell
@@ -208,14 +231,17 @@ export default function LoginGov() {
               </button>
             )}
 
-            <button className="govBtn govBtnPrimary" disabled={isWorking} type="submit">
-              {isWorking ? "Signing in..." : "Sign in"}
-            </button>
+            {passkeyToken ? (
+              <button className="govBtn govBtnPrimary" type="button" onClick={() => finishWithPasskey(passkeyToken)} data-testid="use-passkey">
+                Use your passkey to finish signing in
+              </button>
+            ) : (
+              <button className="govBtn govBtnPrimary" disabled={isWorking} type="submit">
+                {isWorking ? "Signing in..." : "Sign in"}
+              </button>
+            )}
           </form>
 
-          <div className="govDivider">or</div>
-
-          <OAuthButtons busy={isWorking || isResending} onPick={onOAuthPick} />
 
           <div style={{ marginTop: 14, fontSize: 13, color: "rgb(175, 120, 24)" }}>
             No account? <Link to="/signup">Create one</Link>

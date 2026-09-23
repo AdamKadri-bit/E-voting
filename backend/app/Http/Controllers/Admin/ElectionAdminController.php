@@ -64,6 +64,13 @@ class ElectionAdminController extends Controller
         $data = $this->validateElection($request);
         $data['ends_at'] = $this->resolveEndsAt($data);
 
+        // A new election has no trustee key yet, so it can't start life open.
+        if ($data['status'] === 'active') {
+            return response()->json([
+                'message' => 'Create the election as a draft, run the trustee key ceremony, then activate it.',
+            ], 422);
+        }
+
         $election = Election::create($data);
 
         $this->audit->log(
@@ -101,6 +108,18 @@ class ElectionAdminController extends Controller
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
         ]);
 
+        // End-to-end elections move forward only: once polls have closed the
+        // encrypted tally exists, and reopening would let ballots change after
+        // it was formed. Returning to draft is allowed only before any ballot.
+        if ($election->isE2e() && $data['status'] !== $election->status) {
+            if ($election->status === 'closed') {
+                return response()->json(['message' => 'A closed end-to-end election cannot be reopened.'], 422);
+            }
+            if ($data['status'] === 'draft' && $election->e2eBallots()->exists()) {
+                return response()->json(['message' => 'Ballots have been cast; this election can no longer return to draft.'], 422);
+            }
+        }
+
         // Guard: an incomplete election cannot open for voting. Without a
         // window, constituencies, lists and candidates on those lists, voters
         // would be handed an empty ballot.
@@ -124,6 +143,16 @@ class ElectionAdminController extends Controller
         }
 
         $election->update(['status' => $data['status']]);
+
+        if ($election->isE2e()) {
+            // Opening freezes every ballot style; closing forms the encrypted tally.
+            if ($data['status'] === 'active') {
+                app(\App\Services\E2e\ManifestService::class)->freezeAll($election);
+            }
+            if ($data['status'] === 'closed') {
+                app(\App\Services\E2e\TallyService::class)->aggregateIfReady($election->fresh());
+            }
+        }
 
         $this->audit->log(
             $request->attributes->get('admin_user'),
@@ -194,6 +223,7 @@ class ElectionAdminController extends Controller
             // Optional: falls back to the statutory close (see resolveEndsAt).
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
             'status' => ['required', Rule::in(['draft', 'active', 'closed'])],
+            'diaspora_voting_enabled' => ['sometimes', 'boolean'],
         ]);
     }
 
@@ -213,6 +243,7 @@ class ElectionAdminController extends Controller
             'starts_at' => ['required', 'date'],
             // Optional: falls back to the statutory close (see resolveEndsAt).
             'ends_at' => ['nullable', 'date', 'after:starts_at'],
+            'diaspora_voting_enabled' => ['sometimes', 'boolean'],
         ]);
     }
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useGovTheme } from "../../ui/useGovTheme";
-import { Sun, Moon, TreePine, LogOut, ChevronDown, LogIn, UserPlus } from "lucide-react";
+import { Sun, Moon, TreePine, LogOut, ChevronDown, LogIn, UserPlus, LayoutDashboard, Vote, ListChecks, ShieldCheck, KeyRound, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logout as apiLogout } from "../../lib/api";
@@ -15,8 +15,17 @@ type DashboardLayoutProps = {
   children: ReactNode;
 };
 
+const MENU = [
+  { to: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
+  { to: "/elections", label: "Elections", icon: <Vote size={16} /> },
+  { to: "/board", label: "Bulletin board", icon: <ListChecks size={16} /> },
+  { to: "/verify", label: "Verifier", icon: <ShieldCheck size={16} /> },
+  { to: "/trustee", label: "Trustee duties", icon: <KeyRound size={16} /> },
+  { to: "/profile", label: "Profile & passkeys", icon: <UserRound size={16} /> },
+];
+
 export default function DashboardLayout({
-  userEmail = "user@example.com",
+  userEmail = "Account",
   onLogout,
   isGuest = false,
   children,
@@ -69,6 +78,9 @@ export default function DashboardLayout({
           {isGuest ? (
             <>
               {/* Guest actions */}
+              <Link to="/board" className="govBtn gv-hide-sm" style={{ padding: "10px 14px", textDecoration: "none", fontWeight: 800, fontSize: 13 }}>
+                <ListChecks size={16} /> Board
+              </Link>
               <Link
                 to="/login"
                 className="govBtn"
@@ -116,8 +128,8 @@ export default function DashboardLayout({
                   padding: "10px 12px",
                 }}
               >
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "12px", color: "var(--gov-muted)" }}>
+                <div style={{ textAlign: "right", minWidth: 0 }}>
+                  <div style={{ fontSize: "12px", color: "var(--gov-muted)", maxWidth: "38vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {userEmail}
                   </div>
                 </div>
@@ -135,10 +147,23 @@ export default function DashboardLayout({
                     border: "1px solid var(--gov-edge)",
                     borderRadius: "12px",
                     zIndex: 100,
-                    minWidth: "200px",
+                    minWidth: "220px",
+                    maxWidth: "calc(100vw - 24px)",
                     backdropFilter: "blur(10px)",
+                    padding: 6,
                   }}
                 >
+                  {MENU.map((m) => (
+                    <Link
+                      key={m.to}
+                      to={m.to}
+                      onClick={() => setShowDropdown(false)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 44, padding: "8px 12px", borderRadius: 10, color: "var(--gov-ink)", textDecoration: "none", fontSize: 14 }}
+                    >
+                      {m.icon}
+                      {m.label}
+                    </Link>
+                  ))}
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -205,7 +230,7 @@ export default function DashboardLayout({
         }}
       >
         <p style={{ margin: 0 }}>
-          💻 Secure session active • 🔒 End-to-end encrypted • ✓ WebAuthn verified
+          Ballots encrypted in your browser • Public bulletin board anyone can verify • Passkey sign-in available
         </p>
       </div>
     </div>

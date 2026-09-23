@@ -1,0 +1,1612 @@
+{
+  "generated_by": "frontend/scripts/gen-crypto-vectors.ts",
+  "hash_to_scalar": [
+    {
+      "domain": "schnorr",
+      "items": [
+        "a",
+        "b"
+      ],
+      "out": "9c2d7e31b969b4f1a4d2de2ad4d7d46d6a0d3ac847e876d1fec9d5f2b072db0d"
+    },
+    {
+      "domain": "range",
+      "items": [],
+      "out": "581bf0a8b9b8b09a72891c984280361c759f095efe8bcb1ddfa9dae8e7f17a08"
+    },
+    {
+      "domain": "exact",
+      "items": [
+        "ünïcødé",
+        "",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "out": "f0740202c121e8c6f7c34f42dff33a8d9e0a058365224ca41f2e6c422ce20600"
+    }
+  ],
+  "base_multiples": [
+    {
+      "k": "0100000000000000000000000000000000000000000000000000000000000000",
+      "p": "e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76"
+    },
+    {
+      "k": "0200000000000000000000000000000000000000000000000000000000000000",
+      "p": "6a493210f7499cd17fecb510ae0cea23a110e8d5b901f8acadd3095c73a3b919"
+    },
+    {
+      "k": "0500000000000000000000000000000000000000000000000000000000000000",
+      "p": "e882b131016b52c1d3337080187cf768423efccbb517bb495ab812c4160ff44e"
+    },
+    {
+      "k": "d20a1feb8ca954ab000000000000000000000000000000000000000000000000",
+      "p": "5e3ac6ea76ab67af4e5b260a6ee02eceeca2a70572bca2f90826a1e455215a5f"
+    }
+  ],
+  "manifest": {
+    "id": 1,
+    "election_id": 7,
+    "constituency_id": 3,
+    "district_id": 11,
+    "options": [
+      {
+        "type": "list",
+        "id": 100,
+        "list_id": null,
+        "label": "Unity"
+      },
+      {
+        "type": "list",
+        "id": 101,
+        "list_id": null,
+        "label": "Change"
+      },
+      {
+        "type": "candidate",
+        "id": 500,
+        "list_id": 100,
+        "label": "A. Haddad"
+      },
+      {
+        "type": "candidate",
+        "id": 501,
+        "list_id": 100,
+        "label": "R. Khoury"
+      },
+      {
+        "type": "candidate",
+        "id": 600,
+        "list_id": 101,
+        "label": "S. Nasr"
+      }
+    ],
+    "constraints": [
+      {
+        "type": "exact",
+        "value": 1,
+        "indices": [
+          0,
+          1
+        ],
+        "parent": null
+      },
+      {
+        "type": "max",
+        "value": 1,
+        "indices": [
+          2,
+          3,
+          4
+        ],
+        "parent": null
+      },
+      {
+        "type": "implies",
+        "value": 1,
+        "indices": [
+          2,
+          3
+        ],
+        "parent": 0
+      },
+      {
+        "type": "implies",
+        "value": 1,
+        "indices": [
+          4
+        ],
+        "parent": 1
+      }
+    ],
+    "hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac"
+  },
+  "ceremony": {
+    "round1": [
+      {
+        "trustee_index": 1,
+        "comm_public_key": "3e279cf09f10a35cfd180eecfd8ae6647b674734ad0794637e3604f5d8d1b539",
+        "comm_proof": {
+          "r": "2c85aafde420ac662cd9c91635ca53a3a531b0069f70c61e332f0bbccbb35468",
+          "z": "845860ae18ba6e6252af2d9277d2ed407bb7a3b3dc33795b2ff8d5731ad67104"
+        },
+        "commitments": [
+          "0008c715691b73b3ed7c9a241deffc14c09bb285c6ed921d23af0e019b918e34",
+          "90e47950c26905e7a2746ead64bd059a5cfa6b65f69ccf2c039144a998be0e59"
+        ],
+        "commitment_proofs": [
+          {
+            "r": "f64221728c42c18e35731146db1c1ab6485843f76abca12221f29bfc074b8b01",
+            "z": "63a743598b17a234d0e5cb82f6d294749bf7af6a41fb5f407d0628eae38bb908"
+          },
+          {
+            "r": "50c8fda66b00dde7b1b3e53a0eade0d5ed2bef5b06b08e59a98515de5dc6147f",
+            "z": "d745cdbf4301d039dd49f09a5dc0e21f964f7fa4e3e0263cbf14d7f4f1498701"
+          }
+        ]
+      },
+      {
+        "trustee_index": 2,
+        "comm_public_key": "bc9bef9c31e65c772eaa0d11259ef379c0c811c9f137437ce34f7f796deb6b58",
+        "comm_proof": {
+          "r": "8e0192d59e5e9abb1f4ece1b743384a41ad7a930576b85cfd5737efdf3ae9448",
+          "z": "ac33bc2675de1060dd0629d6e05c52ce503eab3ab3b018f79c8adec6ae660609"
+        },
+        "commitments": [
+          "083ebc5f72991a304ab7980240d5770aac8b8453d37c9e6d256c198d72bc2c79",
+          "b8f3fd2294dd6df7fe69cfcc2965353a6348af0046fe7dd90b0e1fc0a709307b"
+        ],
+        "commitment_proofs": [
+          {
+            "r": "46483b93aefbe7b24ed6295a10dc7104fcd7bddf170b12583cf8f0042e5b4e33",
+            "z": "b2df28f9b6d95317be7605000c4a376ffdb4ff91448f23183b8dd933f083ba02"
+          },
+          {
+            "r": "c24f60b7e552e4c56802412375d647604b7f23e9d845a97b0094743ec1b55708",
+            "z": "84766fb01e3f16febe153ba2f72ba7e19cb9036507bf3addb5ab5f113ae3c90e"
+          }
+        ]
+      },
+      {
+        "trustee_index": 3,
+        "comm_public_key": "4c9feb6c4b200a6d9bd86ecde0a7bf6a0c946be09bf7100ac22419c43e377527",
+        "comm_proof": {
+          "r": "72fd9d3652122de3fa7fcfb53619c4159c8b02096516975672bc1193b15f4512",
+          "z": "43eb05f06de9b85ef80f25bebb924d4c7d87584b8c931d82f124d57e1267d90e"
+        },
+        "commitments": [
+          "b8fb3489daf87a209e6e1b1e69b0730ce8b51c8755c48d542e8461b850989937",
+          "d01702f11e2d4838e82eca23d8a4fed0357472b38c990cb9ea4d726431dff029"
+        ],
+        "commitment_proofs": [
+          {
+            "r": "86ee201af914847560b087669c1a1837262a24ea9f97543667c0d883fff3bb1c",
+            "z": "5b2e3232e7c39a04c3d7c5d96e601571e77dc2c37754cfe63dce1a5cf6642000"
+          },
+          {
+            "r": "64aedf6510f1316ef9f333d94ec0f50579f5e956fb4882365874eae08d18ee77",
+            "z": "e30789f4f5423eca0929b0448fcc43e3923dff35dbf7a634aaf3efc9cd59e80c"
+          }
+        ]
+      }
+    ],
+    "joint_public_key": "52aa5d1806b30a220ef2d51a0ca7decef14b4450f955f34529ebf5c5542add62",
+    "share_public_keys": [
+      {
+        "index": 1,
+        "key": "74a9027dca08b314f3eab151740adc3a7af884a4c5ca55c7c7ef552261fac76c"
+      },
+      {
+        "index": 2,
+        "key": "aece7edfad66ec8c2898f43ff00d60585e276e9f390b3405963b29f6c05dac7b"
+      },
+      {
+        "index": 3,
+        "key": "3240e82ee95618a5fe055ec35ec9d8eb35cab22d69a2a00595b77cf72709504f"
+      }
+    ]
+  },
+  "ballots": {
+    "valid": {
+      "ballot": {
+        "election_id": 7,
+        "manifest_id": 1,
+        "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+        "credential": "cred-x",
+        "ciphertexts": [
+          {
+            "a": "d2f5c1a6189aa71eea73fd89aa5c90acd99aeb4225579910a798ad858db49f11",
+            "b": "3c298d8164093e43ec28f426ae7773e7d419943170bb5845b37a09e84b792f37"
+          },
+          {
+            "a": "3a5be1dc9ab3c47311862f82ecc4cd7c8b2df2e12030c4ec7e582c1511ceac0e",
+            "b": "6e78c4aa0d58cb52741748b740c72149a46666765612d3b10e0186c64797ee15"
+          },
+          {
+            "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+            "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+          },
+          {
+            "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+            "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+          },
+          {
+            "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+            "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+          }
+        ],
+        "option_proofs": [
+          {
+            "c": [
+              "7a8cef02282fbf62136d6a0d8b423717510129aaedae542796b3cc6a2ebcff05",
+              "9d4e37761b4da1c4eeb34fb550290c381e81b37dee7880d2d644efab9912f20f"
+            ],
+            "z": [
+              "f4295a85ed7821f651f75a2bd9c5661d04cd1f42a626c5ab86e9bbd7decb250a",
+              "3bff01db3deee87647008479130389bf1e1d7acb372d6715f97d5cfeb857c50b"
+            ]
+          },
+          {
+            "c": [
+              "961122c9659d4e89ab0c9242fb669f571e25a74368c718240c525bc366eb5c04",
+              "2acca61c191a30aaa60592980deb9f3d7a797e27a7886cf80f5d6a009d45d103"
+            ],
+            "z": [
+              "29c44a93b2d33411ae835e23ad88feb908e1db5faa12a12685090809c284b704",
+              "a3cfe430898b8849d5fb0349dce8629aea72d7283cec2e0340203eb3ffe85b03"
+            ]
+          },
+          {
+            "c": [
+              "4e59551dcb0101ea3143016a82d2aa6aacb66dfa6795d1ce5d47fb927588300c",
+              "5ed0c27f4ec959dc8fd44a92cf163b2f1c9dc79b82556bf460c8082bb39ce20b"
+            ],
+            "z": [
+              "381af0a89033fc8f521f588915f732191a964100fb7c47c8a520371f348efa0b",
+              "a2faccadd744065ad8bf1fe9ddbc10484d696268fbaa4b493cb1fbffc1a6ab0b"
+            ]
+          },
+          {
+            "c": [
+              "5c7c74f6c15374a4bb132739968a183fb2a092b5fca52fc7db9bb66c0f91ef02",
+              "9bcf773f8e449cf6cb2bacef47bc0d96f6d22e3421e5f81f26d006aac11fa607"
+            ],
+            "z": [
+              "4d7418787c7710355f0b5f53c20ecf300ff8cabcd05e8177ea01e7422eb0c30f",
+              "b4ad725152d723007040f2efa2c0c59b0491bdc18ce8abc0731dea4e76c72a06"
+            ]
+          },
+          {
+            "c": [
+              "0ef4164ab8aad8a1f5618a076edb698a1fd0ae3294d9e317f191772b108e5808",
+              "3103a739cbd7558d4b9b28363c7085cc8b7badee57bc2efe8236b30df624dc05"
+            ],
+            "z": [
+              "8dbcd1480b6f671b6549af2b22c532500e5158d7ae3e3ba2297b72d1e02aa802",
+              "fedd79d03349de4464af81340816e666b7eb8c715f98aacc9a06edfd7bf51e0c"
+            ]
+          }
+        ],
+        "constraint_proofs": [
+          {
+            "c": "ddc87541faa86111d28b0c7a175879a8e52854f51b9d5923cecf71dc077c6503",
+            "z": "0178c8ee13f75910a30bad76471e9089403c2d839985f9823dc2c56dba829b09"
+          },
+          {
+            "c": [
+              "903b589c0ba5f6bbf287a25f551bd698cd40269a3c668fa83586fab58329c20f",
+              "65d12dd1812dea968dde1d32c4e020d9ce861b777a87b1ef1ac7141db1ee5a09"
+            ],
+            "z": [
+              "555f493447316401549a34c335c3f7e68d5392aa6994780db4df92ea3721a807",
+              "2a5982f177b5c2ca719c7f7e000b59aea99bfc826dd0a5f47cbc027760192c06"
+            ]
+          },
+          {
+            "c": [
+              "a24d2351e488ee7fb09e7a7fa1020bebfa45c08253c11b2885204ff559333007",
+              "7f81e2bdc68ec6ada7e5d5a61d840c7de2da90493bc7e81431367fed1665f70c"
+            ],
+            "z": [
+              "fbeba0254cbd2c9bc840d563fe9d8afbe6cdf2359eb28b6589d73ae2aab0d801",
+              "08e8d90339971ae41b83c9396e49c2f1cbcb6171c808593eb4bb15e0a8141e0e"
+            ]
+          },
+          {
+            "c": [
+              "4621d638f95c1c22fa7f6a19d4861e362e1bef8c4597641f9fb77b860a43f20c",
+              "0da54e716ee1aa1a2876d5607d266d620f4d1914377405b7ffd59f7d34abe908"
+            ],
+            "z": [
+              "6161ddcea55ff1b322bf3541893b1955c7e3dd2e98e402815e1c61367f371c0c",
+              "af6377ae6ca222d3fbe34b5a096548cb5d0e57f442e837e6f448b32d7fe4fc07"
+            ]
+          }
+        ]
+      },
+      "tracking": {
+        "full": "d57a31cd30351caec841b64dfb4d0ca59c629faad3e157c171278d2a2de88732",
+        "short": "TNX3-3K9G-6MEA-XJ21"
+      }
+    },
+    "over_vote": {
+      "election_id": 7,
+      "manifest_id": 1,
+      "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+      "credential": "cred-x",
+      "ciphertexts": [
+        {
+          "a": "f29c7b9bfb72ed9d0813e66298c06b0cf351956eed6f523e9d9ffb0dccc7e259",
+          "b": "28801efcd3ee693cd18fe3b89ce468c5bb803decb35b5ef012d23fb7cbadde68"
+        },
+        {
+          "a": "3a5be1dc9ab3c47311862f82ecc4cd7c8b2df2e12030c4ec7e582c1511ceac0e",
+          "b": "6e78c4aa0d58cb52741748b740c72149a46666765612d3b10e0186c64797ee15"
+        },
+        {
+          "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+          "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+        },
+        {
+          "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+          "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+        },
+        {
+          "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+          "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+        }
+      ],
+      "option_proofs": [
+        {
+          "c": [
+            "7a8cef02282fbf62136d6a0d8b423717510129aaedae542796b3cc6a2ebcff05",
+            "9d4e37761b4da1c4eeb34fb550290c381e81b37dee7880d2d644efab9912f20f"
+          ],
+          "z": [
+            "f4295a85ed7821f651f75a2bd9c5661d04cd1f42a626c5ab86e9bbd7decb250a",
+            "3bff01db3deee87647008479130389bf1e1d7acb372d6715f97d5cfeb857c50b"
+          ]
+        },
+        {
+          "c": [
+            "961122c9659d4e89ab0c9242fb669f571e25a74368c718240c525bc366eb5c04",
+            "2acca61c191a30aaa60592980deb9f3d7a797e27a7886cf80f5d6a009d45d103"
+          ],
+          "z": [
+            "29c44a93b2d33411ae835e23ad88feb908e1db5faa12a12685090809c284b704",
+            "a3cfe430898b8849d5fb0349dce8629aea72d7283cec2e0340203eb3ffe85b03"
+          ]
+        },
+        {
+          "c": [
+            "4e59551dcb0101ea3143016a82d2aa6aacb66dfa6795d1ce5d47fb927588300c",
+            "5ed0c27f4ec959dc8fd44a92cf163b2f1c9dc79b82556bf460c8082bb39ce20b"
+          ],
+          "z": [
+            "381af0a89033fc8f521f588915f732191a964100fb7c47c8a520371f348efa0b",
+            "a2faccadd744065ad8bf1fe9ddbc10484d696268fbaa4b493cb1fbffc1a6ab0b"
+          ]
+        },
+        {
+          "c": [
+            "5c7c74f6c15374a4bb132739968a183fb2a092b5fca52fc7db9bb66c0f91ef02",
+            "9bcf773f8e449cf6cb2bacef47bc0d96f6d22e3421e5f81f26d006aac11fa607"
+          ],
+          "z": [
+            "4d7418787c7710355f0b5f53c20ecf300ff8cabcd05e8177ea01e7422eb0c30f",
+            "b4ad725152d723007040f2efa2c0c59b0491bdc18ce8abc0731dea4e76c72a06"
+          ]
+        },
+        {
+          "c": [
+            "0ef4164ab8aad8a1f5618a076edb698a1fd0ae3294d9e317f191772b108e5808",
+            "3103a739cbd7558d4b9b28363c7085cc8b7badee57bc2efe8236b30df624dc05"
+          ],
+          "z": [
+            "8dbcd1480b6f671b6549af2b22c532500e5158d7ae3e3ba2297b72d1e02aa802",
+            "fedd79d03349de4464af81340816e666b7eb8c715f98aacc9a06edfd7bf51e0c"
+          ]
+        }
+      ],
+      "constraint_proofs": [
+        {
+          "c": "ddc87541faa86111d28b0c7a175879a8e52854f51b9d5923cecf71dc077c6503",
+          "z": "0178c8ee13f75910a30bad76471e9089403c2d839985f9823dc2c56dba829b09"
+        },
+        {
+          "c": [
+            "903b589c0ba5f6bbf287a25f551bd698cd40269a3c668fa83586fab58329c20f",
+            "65d12dd1812dea968dde1d32c4e020d9ce861b777a87b1ef1ac7141db1ee5a09"
+          ],
+          "z": [
+            "555f493447316401549a34c335c3f7e68d5392aa6994780db4df92ea3721a807",
+            "2a5982f177b5c2ca719c7f7e000b59aea99bfc826dd0a5f47cbc027760192c06"
+          ]
+        },
+        {
+          "c": [
+            "a24d2351e488ee7fb09e7a7fa1020bebfa45c08253c11b2885204ff559333007",
+            "7f81e2bdc68ec6ada7e5d5a61d840c7de2da90493bc7e81431367fed1665f70c"
+          ],
+          "z": [
+            "fbeba0254cbd2c9bc840d563fe9d8afbe6cdf2359eb28b6589d73ae2aab0d801",
+            "08e8d90339971ae41b83c9396e49c2f1cbcb6171c808593eb4bb15e0a8141e0e"
+          ]
+        },
+        {
+          "c": [
+            "4621d638f95c1c22fa7f6a19d4861e362e1bef8c4597641f9fb77b860a43f20c",
+            "0da54e716ee1aa1a2876d5607d266d620f4d1914377405b7ffd59f7d34abe908"
+          ],
+          "z": [
+            "6161ddcea55ff1b322bf3541893b1955c7e3dd2e98e402815e1c61367f371c0c",
+            "af6377ae6ca222d3fbe34b5a096548cb5d0e57f442e837e6f448b32d7fe4fc07"
+          ]
+        }
+      ]
+    },
+    "two_lists": {
+      "election_id": 7,
+      "manifest_id": 1,
+      "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+      "credential": "cred-x",
+      "ciphertexts": [
+        {
+          "a": "d2f5c1a6189aa71eea73fd89aa5c90acd99aeb4225579910a798ad858db49f11",
+          "b": "3c298d8164093e43ec28f426ae7773e7d419943170bb5845b37a09e84b792f37"
+        },
+        {
+          "a": "ccd0609cd711232030ae7f373b83b7a64554c0a6403d52fe0206bf6154d9cd3e",
+          "b": "e07007473d99b92c9713eb7afaddbeb98e74d174fa7134fed7ee3b7988608f57"
+        },
+        {
+          "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+          "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+        },
+        {
+          "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+          "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+        },
+        {
+          "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+          "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+        }
+      ],
+      "option_proofs": [
+        {
+          "c": [
+            "7a8cef02282fbf62136d6a0d8b423717510129aaedae542796b3cc6a2ebcff05",
+            "9d4e37761b4da1c4eeb34fb550290c381e81b37dee7880d2d644efab9912f20f"
+          ],
+          "z": [
+            "f4295a85ed7821f651f75a2bd9c5661d04cd1f42a626c5ab86e9bbd7decb250a",
+            "3bff01db3deee87647008479130389bf1e1d7acb372d6715f97d5cfeb857c50b"
+          ]
+        },
+        {
+          "c": [
+            "c7cca1ddc6fe9611fd90ba348eb3b00012896ca0c75fb8bbcb8d28ae7cdf530a",
+            "12b5982530275e18538a0c88ee80f8669fe7ea25bfa6fc0d02a5f92c0793de09"
+          ],
+          "z": [
+            "95c86592a07c753146acf3524fe5e604b66dd5539a995c53babd665b302ae908",
+            "1b0f681fcdca83388b83f5752d025b71124dcaa4a73e5e4467eaa935369acd04"
+          ]
+        },
+        {
+          "c": [
+            "4e59551dcb0101ea3143016a82d2aa6aacb66dfa6795d1ce5d47fb927588300c",
+            "5ed0c27f4ec959dc8fd44a92cf163b2f1c9dc79b82556bf460c8082bb39ce20b"
+          ],
+          "z": [
+            "381af0a89033fc8f521f588915f732191a964100fb7c47c8a520371f348efa0b",
+            "a2faccadd744065ad8bf1fe9ddbc10484d696268fbaa4b493cb1fbffc1a6ab0b"
+          ]
+        },
+        {
+          "c": [
+            "5c7c74f6c15374a4bb132739968a183fb2a092b5fca52fc7db9bb66c0f91ef02",
+            "9bcf773f8e449cf6cb2bacef47bc0d96f6d22e3421e5f81f26d006aac11fa607"
+          ],
+          "z": [
+            "4d7418787c7710355f0b5f53c20ecf300ff8cabcd05e8177ea01e7422eb0c30f",
+            "b4ad725152d723007040f2efa2c0c59b0491bdc18ce8abc0731dea4e76c72a06"
+          ]
+        },
+        {
+          "c": [
+            "0ef4164ab8aad8a1f5618a076edb698a1fd0ae3294d9e317f191772b108e5808",
+            "3103a739cbd7558d4b9b28363c7085cc8b7badee57bc2efe8236b30df624dc05"
+          ],
+          "z": [
+            "8dbcd1480b6f671b6549af2b22c532500e5158d7ae3e3ba2297b72d1e02aa802",
+            "fedd79d03349de4464af81340816e666b7eb8c715f98aacc9a06edfd7bf51e0c"
+          ]
+        }
+      ],
+      "constraint_proofs": [
+        {
+          "c": "ddc87541faa86111d28b0c7a175879a8e52854f51b9d5923cecf71dc077c6503",
+          "z": "0178c8ee13f75910a30bad76471e9089403c2d839985f9823dc2c56dba829b09"
+        },
+        {
+          "c": [
+            "903b589c0ba5f6bbf287a25f551bd698cd40269a3c668fa83586fab58329c20f",
+            "65d12dd1812dea968dde1d32c4e020d9ce861b777a87b1ef1ac7141db1ee5a09"
+          ],
+          "z": [
+            "555f493447316401549a34c335c3f7e68d5392aa6994780db4df92ea3721a807",
+            "2a5982f177b5c2ca719c7f7e000b59aea99bfc826dd0a5f47cbc027760192c06"
+          ]
+        },
+        {
+          "c": [
+            "a24d2351e488ee7fb09e7a7fa1020bebfa45c08253c11b2885204ff559333007",
+            "7f81e2bdc68ec6ada7e5d5a61d840c7de2da90493bc7e81431367fed1665f70c"
+          ],
+          "z": [
+            "fbeba0254cbd2c9bc840d563fe9d8afbe6cdf2359eb28b6589d73ae2aab0d801",
+            "08e8d90339971ae41b83c9396e49c2f1cbcb6171c808593eb4bb15e0a8141e0e"
+          ]
+        },
+        {
+          "c": [
+            "4621d638f95c1c22fa7f6a19d4861e362e1bef8c4597641f9fb77b860a43f20c",
+            "0da54e716ee1aa1a2876d5607d266d620f4d1914377405b7ffd59f7d34abe908"
+          ],
+          "z": [
+            "6161ddcea55ff1b322bf3541893b1955c7e3dd2e98e402815e1c61367f371c0c",
+            "af6377ae6ca222d3fbe34b5a096548cb5d0e57f442e837e6f448b32d7fe4fc07"
+          ]
+        }
+      ]
+    },
+    "replayed_credential": {
+      "election_id": 7,
+      "manifest_id": 1,
+      "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+      "credential": "cred-y",
+      "ciphertexts": [
+        {
+          "a": "d2f5c1a6189aa71eea73fd89aa5c90acd99aeb4225579910a798ad858db49f11",
+          "b": "3c298d8164093e43ec28f426ae7773e7d419943170bb5845b37a09e84b792f37"
+        },
+        {
+          "a": "3a5be1dc9ab3c47311862f82ecc4cd7c8b2df2e12030c4ec7e582c1511ceac0e",
+          "b": "6e78c4aa0d58cb52741748b740c72149a46666765612d3b10e0186c64797ee15"
+        },
+        {
+          "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+          "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+        },
+        {
+          "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+          "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+        },
+        {
+          "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+          "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+        }
+      ],
+      "option_proofs": [
+        {
+          "c": [
+            "7a8cef02282fbf62136d6a0d8b423717510129aaedae542796b3cc6a2ebcff05",
+            "9d4e37761b4da1c4eeb34fb550290c381e81b37dee7880d2d644efab9912f20f"
+          ],
+          "z": [
+            "f4295a85ed7821f651f75a2bd9c5661d04cd1f42a626c5ab86e9bbd7decb250a",
+            "3bff01db3deee87647008479130389bf1e1d7acb372d6715f97d5cfeb857c50b"
+          ]
+        },
+        {
+          "c": [
+            "961122c9659d4e89ab0c9242fb669f571e25a74368c718240c525bc366eb5c04",
+            "2acca61c191a30aaa60592980deb9f3d7a797e27a7886cf80f5d6a009d45d103"
+          ],
+          "z": [
+            "29c44a93b2d33411ae835e23ad88feb908e1db5faa12a12685090809c284b704",
+            "a3cfe430898b8849d5fb0349dce8629aea72d7283cec2e0340203eb3ffe85b03"
+          ]
+        },
+        {
+          "c": [
+            "4e59551dcb0101ea3143016a82d2aa6aacb66dfa6795d1ce5d47fb927588300c",
+            "5ed0c27f4ec959dc8fd44a92cf163b2f1c9dc79b82556bf460c8082bb39ce20b"
+          ],
+          "z": [
+            "381af0a89033fc8f521f588915f732191a964100fb7c47c8a520371f348efa0b",
+            "a2faccadd744065ad8bf1fe9ddbc10484d696268fbaa4b493cb1fbffc1a6ab0b"
+          ]
+        },
+        {
+          "c": [
+            "5c7c74f6c15374a4bb132739968a183fb2a092b5fca52fc7db9bb66c0f91ef02",
+            "9bcf773f8e449cf6cb2bacef47bc0d96f6d22e3421e5f81f26d006aac11fa607"
+          ],
+          "z": [
+            "4d7418787c7710355f0b5f53c20ecf300ff8cabcd05e8177ea01e7422eb0c30f",
+            "b4ad725152d723007040f2efa2c0c59b0491bdc18ce8abc0731dea4e76c72a06"
+          ]
+        },
+        {
+          "c": [
+            "0ef4164ab8aad8a1f5618a076edb698a1fd0ae3294d9e317f191772b108e5808",
+            "3103a739cbd7558d4b9b28363c7085cc8b7badee57bc2efe8236b30df624dc05"
+          ],
+          "z": [
+            "8dbcd1480b6f671b6549af2b22c532500e5158d7ae3e3ba2297b72d1e02aa802",
+            "fedd79d03349de4464af81340816e666b7eb8c715f98aacc9a06edfd7bf51e0c"
+          ]
+        }
+      ],
+      "constraint_proofs": [
+        {
+          "c": "ddc87541faa86111d28b0c7a175879a8e52854f51b9d5923cecf71dc077c6503",
+          "z": "0178c8ee13f75910a30bad76471e9089403c2d839985f9823dc2c56dba829b09"
+        },
+        {
+          "c": [
+            "903b589c0ba5f6bbf287a25f551bd698cd40269a3c668fa83586fab58329c20f",
+            "65d12dd1812dea968dde1d32c4e020d9ce861b777a87b1ef1ac7141db1ee5a09"
+          ],
+          "z": [
+            "555f493447316401549a34c335c3f7e68d5392aa6994780db4df92ea3721a807",
+            "2a5982f177b5c2ca719c7f7e000b59aea99bfc826dd0a5f47cbc027760192c06"
+          ]
+        },
+        {
+          "c": [
+            "a24d2351e488ee7fb09e7a7fa1020bebfa45c08253c11b2885204ff559333007",
+            "7f81e2bdc68ec6ada7e5d5a61d840c7de2da90493bc7e81431367fed1665f70c"
+          ],
+          "z": [
+            "fbeba0254cbd2c9bc840d563fe9d8afbe6cdf2359eb28b6589d73ae2aab0d801",
+            "08e8d90339971ae41b83c9396e49c2f1cbcb6171c808593eb4bb15e0a8141e0e"
+          ]
+        },
+        {
+          "c": [
+            "4621d638f95c1c22fa7f6a19d4861e362e1bef8c4597641f9fb77b860a43f20c",
+            "0da54e716ee1aa1a2876d5607d266d620f4d1914377405b7ffd59f7d34abe908"
+          ],
+          "z": [
+            "6161ddcea55ff1b322bf3541893b1955c7e3dd2e98e402815e1c61367f371c0c",
+            "af6377ae6ca222d3fbe34b5a096548cb5d0e57f442e837e6f448b32d7fe4fc07"
+          ]
+        }
+      ]
+    }
+  },
+  "audits": {
+    "honest": {
+      "election_id": 7,
+      "manifest_id": 1,
+      "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+      "ciphertexts": [
+        {
+          "a": "d2f5c1a6189aa71eea73fd89aa5c90acd99aeb4225579910a798ad858db49f11",
+          "b": "3c298d8164093e43ec28f426ae7773e7d419943170bb5845b37a09e84b792f37"
+        },
+        {
+          "a": "3a5be1dc9ab3c47311862f82ecc4cd7c8b2df2e12030c4ec7e582c1511ceac0e",
+          "b": "6e78c4aa0d58cb52741748b740c72149a46666765612d3b10e0186c64797ee15"
+        },
+        {
+          "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+          "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+        },
+        {
+          "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+          "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+        },
+        {
+          "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+          "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+        }
+      ],
+      "selections": [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "randomness": [
+        "3904895522f28a0d452f234286d99ee34b252cb04ee3bfea6bc486771f202a09",
+        "25c379197ad9ae3b444b15d768563f22598784dceead6113c1074a80d24d5504",
+        "3bae9c0956ed4757fa9128932142f4143bed8c7a0cdc9ae2ea489ae337328c06",
+        "b822c22b12bfbc26ab11ca659bace89a6971fa7a4744ce3ec598835d9c81790b",
+        "ebc3dc1c524356653d18a9a517e231eb1cee8537cbd7d1f07c56cc0e54d13700"
+      ]
+    },
+    "corrupted": {
+      "election_id": 7,
+      "manifest_id": 1,
+      "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+      "ciphertexts": [
+        {
+          "a": "d2f5c1a6189aa71eea73fd89aa5c90acd99aeb4225579910a798ad858db49f11",
+          "b": "3c298d8164093e43ec28f426ae7773e7d419943170bb5845b37a09e84b792f37"
+        },
+        {
+          "a": "3a5be1dc9ab3c47311862f82ecc4cd7c8b2df2e12030c4ec7e582c1511ceac0e",
+          "b": "6e78c4aa0d58cb52741748b740c72149a46666765612d3b10e0186c64797ee15"
+        },
+        {
+          "a": "e6912c188855f7efe4cc73f4802925aac5c06b7af592f835d8f928727150210b",
+          "b": "7cb87819cc1b73ca4d7cb2001f5e73314e51e2c9e917c5e23546e3957a6b8e4b"
+        },
+        {
+          "a": "3e830eb0ac7e778d728e5ced5f00e2e69a07ac931b853ca284998e911b75537e",
+          "b": "58262c0289813c36fcd26cac650305ee91a5b384585208eeb9bd2878e49aad03"
+        },
+        {
+          "a": "cc31d7dfa8abde89adb9ec84ff9016965ee43cc461dfbce9ec04d0db3c34280c",
+          "b": "aa01fb2313fcff9429885adcdee8eba578b40de98680c7fd34fafb7fa4abe72f"
+        }
+      ],
+      "selections": [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      "randomness": [
+        "3904895522f28a0d452f234286d99ee34b252cb04ee3bfea6bc486771f202a09",
+        "25c379197ad9ae3b444b15d768563f22598784dceead6113c1074a80d24d5504",
+        "3bae9c0956ed4757fa9128932142f4143bed8c7a0cdc9ae2ea489ae337328c06",
+        "b822c22b12bfbc26ab11ca659bace89a6971fa7a4744ce3ec598835d9c81790b",
+        "ebc3dc1c524356653d18a9a517e231eb1cee8537cbd7d1f07c56cc0e54d13700"
+      ]
+    }
+  },
+  "board": {
+    "protocol": "evote-v1",
+    "election": {
+      "id": 7,
+      "title": "Test",
+      "status": "closed",
+      "tally_status": "published",
+      "threshold": 2,
+      "trustee_count": 3,
+      "joint_public_key": "52aa5d1806b30a220ef2d51a0ca7decef14b4450f955f34529ebf5c5542add62",
+      "key_ceremony_status": "complete"
+    },
+    "client_bundle": null,
+    "trustees": [
+      {
+        "trustee_index": 1,
+        "name": "T1",
+        "round1": {
+          "trustee_index": 1,
+          "comm_public_key": "3e279cf09f10a35cfd180eecfd8ae6647b674734ad0794637e3604f5d8d1b539",
+          "comm_proof": {
+            "r": "2c85aafde420ac662cd9c91635ca53a3a531b0069f70c61e332f0bbccbb35468",
+            "z": "845860ae18ba6e6252af2d9277d2ed407bb7a3b3dc33795b2ff8d5731ad67104"
+          },
+          "commitments": [
+            "0008c715691b73b3ed7c9a241deffc14c09bb285c6ed921d23af0e019b918e34",
+            "90e47950c26905e7a2746ead64bd059a5cfa6b65f69ccf2c039144a998be0e59"
+          ],
+          "commitment_proofs": [
+            {
+              "r": "f64221728c42c18e35731146db1c1ab6485843f76abca12221f29bfc074b8b01",
+              "z": "63a743598b17a234d0e5cb82f6d294749bf7af6a41fb5f407d0628eae38bb908"
+            },
+            {
+              "r": "50c8fda66b00dde7b1b3e53a0eade0d5ed2bef5b06b08e59a98515de5dc6147f",
+              "z": "d745cdbf4301d039dd49f09a5dc0e21f964f7fa4e3e0263cbf14d7f4f1498701"
+            }
+          ]
+        },
+        "share_public_key": null
+      },
+      {
+        "trustee_index": 2,
+        "name": "T2",
+        "round1": {
+          "trustee_index": 2,
+          "comm_public_key": "bc9bef9c31e65c772eaa0d11259ef379c0c811c9f137437ce34f7f796deb6b58",
+          "comm_proof": {
+            "r": "8e0192d59e5e9abb1f4ece1b743384a41ad7a930576b85cfd5737efdf3ae9448",
+            "z": "ac33bc2675de1060dd0629d6e05c52ce503eab3ab3b018f79c8adec6ae660609"
+          },
+          "commitments": [
+            "083ebc5f72991a304ab7980240d5770aac8b8453d37c9e6d256c198d72bc2c79",
+            "b8f3fd2294dd6df7fe69cfcc2965353a6348af0046fe7dd90b0e1fc0a709307b"
+          ],
+          "commitment_proofs": [
+            {
+              "r": "46483b93aefbe7b24ed6295a10dc7104fcd7bddf170b12583cf8f0042e5b4e33",
+              "z": "b2df28f9b6d95317be7605000c4a376ffdb4ff91448f23183b8dd933f083ba02"
+            },
+            {
+              "r": "c24f60b7e552e4c56802412375d647604b7f23e9d845a97b0094743ec1b55708",
+              "z": "84766fb01e3f16febe153ba2f72ba7e19cb9036507bf3addb5ab5f113ae3c90e"
+            }
+          ]
+        },
+        "share_public_key": null
+      },
+      {
+        "trustee_index": 3,
+        "name": "T3",
+        "round1": {
+          "trustee_index": 3,
+          "comm_public_key": "4c9feb6c4b200a6d9bd86ecde0a7bf6a0c946be09bf7100ac22419c43e377527",
+          "comm_proof": {
+            "r": "72fd9d3652122de3fa7fcfb53619c4159c8b02096516975672bc1193b15f4512",
+            "z": "43eb05f06de9b85ef80f25bebb924d4c7d87584b8c931d82f124d57e1267d90e"
+          },
+          "commitments": [
+            "b8fb3489daf87a209e6e1b1e69b0730ce8b51c8755c48d542e8461b850989937",
+            "d01702f11e2d4838e82eca23d8a4fed0357472b38c990cb9ea4d726431dff029"
+          ],
+          "commitment_proofs": [
+            {
+              "r": "86ee201af914847560b087669c1a1837262a24ea9f97543667c0d883fff3bb1c",
+              "z": "5b2e3232e7c39a04c3d7c5d96e601571e77dc2c37754cfe63dce1a5cf6642000"
+            },
+            {
+              "r": "64aedf6510f1316ef9f333d94ec0f50579f5e956fb4882365874eae08d18ee77",
+              "z": "e30789f4f5423eca0929b0448fcc43e3923dff35dbf7a634aaf3efc9cd59e80c"
+            }
+          ]
+        },
+        "share_public_key": null
+      }
+    ],
+    "manifests": [
+      {
+        "id": 1,
+        "election_id": 7,
+        "constituency_id": 3,
+        "district_id": 11,
+        "options": [
+          {
+            "type": "list",
+            "id": 100,
+            "list_id": null,
+            "label": "Unity"
+          },
+          {
+            "type": "list",
+            "id": 101,
+            "list_id": null,
+            "label": "Change"
+          },
+          {
+            "type": "candidate",
+            "id": 500,
+            "list_id": 100,
+            "label": "A. Haddad"
+          },
+          {
+            "type": "candidate",
+            "id": 501,
+            "list_id": 100,
+            "label": "R. Khoury"
+          },
+          {
+            "type": "candidate",
+            "id": 600,
+            "list_id": 101,
+            "label": "S. Nasr"
+          }
+        ],
+        "constraints": [
+          {
+            "type": "exact",
+            "value": 1,
+            "indices": [
+              0,
+              1
+            ],
+            "parent": null
+          },
+          {
+            "type": "max",
+            "value": 1,
+            "indices": [
+              2,
+              3,
+              4
+            ],
+            "parent": null
+          },
+          {
+            "type": "implies",
+            "value": 1,
+            "indices": [
+              2,
+              3
+            ],
+            "parent": 0
+          },
+          {
+            "type": "implies",
+            "value": 1,
+            "indices": [
+              4
+            ],
+            "parent": 1
+          }
+        ],
+        "hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac"
+      }
+    ],
+    "ballots": [
+      {
+        "sequence": 1,
+        "tracking_code": "801a42b52d594ec233e0f511a3ff229abcadd7b2931933cc3a8878c2ae23e345",
+        "short_code": "G0D4-5D9D-B57C-4CZ0",
+        "status": "superseded",
+        "ballot": {
+          "election_id": 7,
+          "manifest_id": 1,
+          "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+          "credential": "cred-a",
+          "ciphertexts": [
+            {
+              "a": "9c0fde368088d27e760112559f10cf472dc4d51b26e597deae2816c6380c792c",
+              "b": "c8585c73c4e55b8435d110d9c483f2f733751d579259bc49c56ba21a47760874"
+            },
+            {
+              "a": "1a0327eaa40d3e0158bf4919502f8d7579a17fe89f5d90228d401437540ae561",
+              "b": "c054d57adad98f64c72e1e3f55183a28f923a956c54fe289eba84f511546ac6c"
+            },
+            {
+              "a": "a269a4c699a32c8486a86265c9571e65c40f1c03a79b0a135a5ea34018aafb7c",
+              "b": "a692c9309b7a8ce0f39eceb705660cde78457278455b592ade2f965817873d58"
+            },
+            {
+              "a": "9e4c80b50664b48a06a1331afe337873b36a0b5f1198e861b969056c1291b70e",
+              "b": "ecbea93701d462b94839dc16da7ee2ab20b9ca73f03fa3479edf8fcba6c48230"
+            },
+            {
+              "a": "eadc00dc8299fd07da19abe82d2a20ef8ccb04f0d8fd7b87fe692ef8b5768077",
+              "b": "5034b6ebcf5e67ee41530cb1f583b1f477b22e28eb4760cc6643ac09e2a5dd40"
+            }
+          ],
+          "option_proofs": [
+            {
+              "c": [
+                "7941ac191c878a938475ce74656e2b967d775c5e53d559d28562eca61dacac04",
+                "e2bccb5084f3f02cb94b3f7c8781d408ff6b7e0ca865178e3c11c56d6e884e05"
+              ],
+              "z": [
+                "39c32c84a1c3bd64dac7c3a1628bf10f6399e90c9be7b00e5d6a6bc825ab920d",
+                "a8ecc0a68d5e38e660db7c30e91f92e3922860aa364512636f670341e8884409"
+              ]
+            },
+            {
+              "c": [
+                "95f4db547d85b48c7b80a8692be596407a8640f0591435ff7c962bbf6194270e",
+                "57352dae7e7c9f2b1d0daeb3f1953d243380c3b852f80d90a3b0093f0febf208"
+              ],
+              "z": [
+                "d3bbdc8530d0656c3845c3cc597edb20ee220f22ad6965a1b768c604c1067404",
+                "dce6a024780aab38f47972d9ed37c876fc306e363eb6a550ec4159a92b88df0a"
+              ]
+            },
+            {
+              "c": [
+                "c799d22a4500ab99e1b09b1383e03a0508043d0c422c91e594c149966ea4720f",
+                "1c3ac41c3a4c30b67a7e3147324026572d96ccb4563861e2897c3ca15ab70304"
+              ],
+              "z": [
+                "cb6fbe0ae72586bd9b209604d3520e44861e18a2f2b65987aa1eeea54df7d902",
+                "b8884d9b43f2b378a5c28b72769e552ae1e234ade595407d9934f0216b31ed04"
+              ]
+            },
+            {
+              "c": [
+                "87d8ddf3c789e83d86e96b82c844f5aba61ab6d047bbb31f9ea344b519297b0a",
+                "2eccfb09fb0f0852c1670a33901f5208e1dde4f28633aeac826e90aa5c9f860c"
+              ],
+              "z": [
+                "2b450fd46101c4a4179b8592e256b4e9db9b323a4ca3ba50f0f6fcd98e38fe0d",
+                "d25eae9b526bef539eb5daf4b1afdcd8b285a640a6b48ed21883cb7446206f06"
+              ]
+            },
+            {
+              "c": [
+                "266390225fa74186f1bbf068f2f70907ad0ef7b0c248dbc3963e1f15918ddf08",
+                "1f5e4d1b157706a44b46021b3daa74356960c9fbd93c718aaa00b81a489a6a08"
+              ],
+              "z": [
+                "8c437f0faf845bd5999f9ecb4ce2063d771fbc6d2807c1cf4b15cba0c59d1a0f",
+                "fd12ce00a5ad93ffbed3d6d812f146ed128f12f7c2aacafc9da26bfe059ffe09"
+              ]
+            }
+          ],
+          "constraint_proofs": [
+            {
+              "c": "24a1a70e451af6bd1e0e3c85c08d82c93836507c0d79fa804b8e44034ae52808",
+              "z": "24f329bbce492cf972f314f3d9248ced90e0150ac1dddcc9c8ca6dba86f07306"
+            },
+            {
+              "c": [
+                "f9c858fc5d58f388f8f150ea99c19c208d72b2aeeb5985dd9ee430889b771b0e",
+                "1cc35577902432039a3673d57ca9ff4b39e06be4f68d61108161ddf977f3e60f"
+              ],
+              "z": [
+                "e348110bb8d3284f75d2bb3712429315a8e3fa78bdfba9a5919ddf478e147806",
+                "0159978594468d5e60a1fa0e53f7780b19f5b1b37c309a8133bd1a4eb6bdf600"
+              ]
+            },
+            {
+              "c": [
+                "6e1a60d415e0b4e6fc1d7d4756f67fa5dd59e78bfaea52ca44dbcb597295300d",
+                "5206e8a0c2990ca60d2d89f2a828217635dda7b1c60dbf4f25c8fec45ceec400"
+              ],
+              "z": [
+                "51cddca6af5d7225b94946886b52c13827ce89920df9ee819d39d8b8c1c4af07",
+                "fc08d34a2db6bd8917a759e10f5ef56e0bb3501c53190aace9b698f299839c02"
+              ]
+            },
+            {
+              "c": [
+                "e1832ebf66ecc6875e9e31ed6f496fb4da8589dec02832a3746098e0f2f24002",
+                "c2e7be33ff33ac4ac2aed4386e1ef7e15ce221ff63a901c07893faeaa22d980c"
+              ],
+              "z": [
+                "d2af5eda3a5a392fdb399ab4d8880db4eae6eb46392190e6ff4f9454b3ec0005",
+                "714e921f91aa4daa508ff2c0b5fdb5199272a689ee0c411b4229aacfb107b708"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sequence": 2,
+        "tracking_code": "d51604d8aa5b9d6ff05d06646affcc2349fccb159c16784423bfc9e6b76a84cf",
+        "short_code": "TMB0-9P5A-BEEP-ZW2X",
+        "status": "counted",
+        "ballot": {
+          "election_id": 7,
+          "manifest_id": 1,
+          "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+          "credential": "cred-b",
+          "ciphertexts": [
+            {
+              "a": "5e38e60e500f820a522998ab84faa0fef84a5775d1418c1d5ae0932ceb2a6640",
+              "b": "565cc43a42a7a295baabc0d684a7de185ae7a4380cb28dcf5e46c7458c45e74d"
+            },
+            {
+              "a": "8e5e6c09c84a3f8a466e16dc703a5d62afb6e17bb2a2805cf1c6128776d2b441",
+              "b": "68f61dee9be2ecee9802a2e14f047c4cc3d2d0420c54f7d05271a66ed441421e"
+            },
+            {
+              "a": "b68670e307033b04e6103bf6c234b707ff6a7c3a3829388cc516f5e627bd6a7d",
+              "b": "f030aec673bb3e1d9a04ceaca1d35d71ece82973744a066a78902585c2d91f2a"
+            },
+            {
+              "a": "50446d7310b74b088d98ca9d6a654d0f48329fb5920d550bbd843c9a7af95902",
+              "b": "c033e4895f86ff9f2e77f21d6cecec767c7a3c7809405d4e51d987fc9480d71d"
+            },
+            {
+              "a": "dcc0f3bfb57cfaa6ebe8ecd5650efd849031891847345399c3732cc93ce1654b",
+              "b": "c822b1818e2bf37c9be6a2d2ea333c44082937b4e49eeab5c31b6be7d4c85e1c"
+            }
+          ],
+          "option_proofs": [
+            {
+              "c": [
+                "bdd4619b239e40bdbb1554b23b6ec7b5a7451b723dcc912874bf65f7f7a98c02",
+                "ca534a5ed1ef5482ecc7c79288068e8c31c6773a94aa093dd2ca78a7899dc101"
+              ],
+              "z": [
+                "c070990f6f57ded75a4f0664dcbe20bc3d72dd451c497ef50a54e51560ede501",
+                "fbfdc30d44d2de3dce1feaa80f29d3aa6b48baa2aba5145bbe74d460bd818607"
+              ]
+            },
+            {
+              "c": [
+                "7a1308d98f8e16e752ee7bc4ec76213e5a833037d4196adcd462842fe1f69104",
+                "2fbeca03e04c444312b1b335acad80c3bc821fb2ef24a5b81f8130d3a29c5000"
+              ],
+              "z": [
+                "93f1c1465a71eae7ace6dfaa6de8b21eece95ca2c33645203b5be62e00ee7f06",
+                "eb609be2ad5e85c09b008985030c4a92ff85db1a045f15d7a57163b23829700c"
+              ]
+            },
+            {
+              "c": [
+                "d79a09eed917df7e784ff5cded951c4f7f200b8aa197e697f37360b7869c2c0f",
+                "2b8dbeebb6ccb1366ee85b54f624a94b90c62d06a2108fe18f9ac6ccbc984309"
+              ],
+              "z": [
+                "eb10359904e0c701904898acdc4df555184a10cfe07f0395940b26ea21317e03",
+                "25a125ddd787e4d89cb94da2261aaf2eb58123aefb3067ece27fb31077410a0c"
+              ]
+            },
+            {
+              "c": [
+                "427ea2221e6c506bdf2c1bea0b5f59a15c3010b309868e89d8fabcb63eea3505",
+                "443c739c1faee58887727722d9f6cf5bcf47218b86d210664785dc2e8c465a03"
+              ],
+              "z": [
+                "d66f04da687fba965f1f1c4c00cb93f3e4343ad7415d8c76cfcbbd1bc717c407",
+                "4cc1aedd753b59dddad1a9b8ed80d702ef3648e1197ec3c05771e9ae108d2808"
+              ]
+            },
+            {
+              "c": [
+                "57745064f377086008064d1c9aa1fa7d45ad1d845d6280d412bfaea105d25b08",
+                "bcd17d8104fb8229b4450dc87a5bcc594f010d48592f8a171fbf195090e5cf04"
+              ],
+              "z": [
+                "7a05ded733abf1d6e5acafe41b3d506fccc265320039a76302aa5b5464de830f",
+                "2a79162545d50a48f23dbe6d060b73b0b6e9799461665d7d1c7b11a267301800"
+              ]
+            }
+          ],
+          "constraint_proofs": [
+            {
+              "c": "36bb5d50d32c3bb6370300baf0bf76e88d3157635e86c937c262a1a819ef8401",
+              "z": "a6c0bc4b17995769c97cdb8865165cee15c4365f8da85b4effc79b6ce1f26d01"
+            },
+            {
+              "c": [
+                "b00f4baedaa92b0bea2d4af723ea49eef154ff9ec2783286d1b87d93e2fdcc08",
+                "86731f9bdb927ed117ccd8e00fc805782013c03cc134b0fb055984eb3cd2a90b"
+              ],
+              "z": [
+                "6241b8cd02d8b3b34491859ffd5200cb79f1ba0af850b4c5223230d4d6bbab06",
+                "0ff1ef930b919e8013232c388c7bb7b20bcf555f7e4671916463dd896314f00b"
+              ]
+            },
+            {
+              "c": [
+                "2cb191a56e899cff8c480873e09447f39d731f2243188ee13a2fc9037ac3c20d",
+                "b6f2e8cfbe2d1164af57038078c041c1793028a453caecabcc1ea55f52326a05"
+              ],
+              "z": [
+                "f04fda97207947daa2c97ffe52f818131a8e4b66d2e96d6e1ec88bb4c1c91305",
+                "5fd1d2d73151dd00ada3c39288ff5918d286c7678594bce83a8f7e4b7e03e609"
+              ]
+            },
+            {
+              "c": [
+                "89f3c5c2842b66768f48bde5bfcca165a466c7a528c72916a81b414af459c70f",
+                "8fb49af2135216ab9b9dd51eddf47687f19ba216c65093ad3525a1e82a982405"
+              ],
+              "z": [
+                "f9a36955227b6790c074080ff0f2f2734917c6e406c4d688a3346cd58f868f0e",
+                "3c4aa0d75d45c8b63a1675d8863b08b2992ac5cd794ae62607b631f1d2d9010c"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sequence": 3,
+        "tracking_code": "168b3e7dcf128b8f76f7baf6af0981c4f66493edaed61f3b02d01643e0c1a027",
+        "short_code": "2T5K-WZEF-2A5R-YXQQ",
+        "status": "counted",
+        "ballot": {
+          "election_id": 7,
+          "manifest_id": 1,
+          "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+          "credential": "cred-a",
+          "ciphertexts": [
+            {
+              "a": "1c5824aedbe16264896810e824d76b25d85169681cba82d9e747d6e7250b3a58",
+              "b": "962818ea966cdf28388692ad0373d50ce8080f96d3d5bfaf1c9fe8a13e2c3649"
+            },
+            {
+              "a": "ba7e4a592cae087ceffd4894fe21ce885cdaecf397167b08af59bab64f243446",
+              "b": "68e0603a19b277a32e281b097f5dc8da608db48864d1cac165bf8e83065b9b7d"
+            },
+            {
+              "a": "d82d973b032773c568f50142d20101a76371233866e65013c1f37fc85e715318",
+              "b": "de4b0d3e5019cc185687ddcd44b1e6862f89eb1addcb00a7ece71233e560c526"
+            },
+            {
+              "a": "321a39425be7f466205b873550221aeeb6e3e19ecd229b9d5a2a36fb88c4f93a",
+              "b": "3c9e23359888a5873d4101b2c02819880c3e2ebd0fd1de5ef973eb984c00d452"
+            },
+            {
+              "a": "1a1fee7afdce69558c68a647dda6ea2e2cd9760b222078966256824727a7737e",
+              "b": "781cb64e9733bad5c007aec39952295d4a4d3fd2b6018e51598edccbe3377a00"
+            }
+          ],
+          "option_proofs": [
+            {
+              "c": [
+                "3eececab4aeed3434d8772a951618feac40c1a4e7fe37bf9179991293a7f2408",
+                "1c077434aedede49e5bafef21567c05e0b29d173f8c211718dafb8ad55bf3703"
+              ],
+              "z": [
+                "e020031aa03b0f3f78660494b16f9435ba45e98f1f6f30ca578e944a7ac4e70b",
+                "a1a845c5f09876987c2bead4d18a1cff865e8d7925a29bc3e0da9b70b1f13304"
+              ]
+            },
+            {
+              "c": [
+                "ce3efa857c29d612aa191c7eab5a39d2fdad22098d45585ac3a8eb46c56bca08",
+                "2c023a92e2985d9a8ed3aae745182c290434ea1181bd2b79b491794855eeac0a"
+              ],
+              "z": [
+                "e9590565f6ab1e3685276a01d0d32bcb05b8e8d13df4c8ef6887fdb26e5d7c08",
+                "5c27fcaf2663981d22422688a25910b6d4f7c15c19c5c877b43f3c36d7dd250d"
+              ]
+            },
+            {
+              "c": [
+                "556b74cc950f19faaf0c88e29b36fdf3d192921bcc2dd40d0403491132c2050b",
+                "507b36bf5d3be205864ff4247b92fca5f95f2abff0781803b2302202ba82f10f"
+              ],
+              "z": [
+                "c3f6d7b2c9632c6751d64932d46fd1dc910e2ac18a5c9eaccd3ede47d104360b",
+                "67bb832dce1d59a945f3e8189ee1d1aae1f020494de64cd3b43b76dfb1d37806"
+              ]
+            },
+            {
+              "c": [
+                "7b1cfd67c98ae4467a7b1d3e62eb63aa7acadb87d82f23198dbcf90915c5100d",
+                "f8299e3bae8f533656db257a9683980bfbbfd9c8dc50c14e8a7bf90be11add0d"
+              ],
+              "z": [
+                "973b0b1a62824bef3145e29e411f3e372e4c5f13a649bedb653ec0094d70ba0a",
+                "4b1fe10bb87accbaa5819be675c08451ca1687e28792265d6daf49c42a9f3606"
+              ]
+            },
+            {
+              "c": [
+                "7aaa482319cc42c14319c25ca3c2de053191024b28e41eb479534af6a1330a05",
+                "72a7bae510f59f49e88c4f0e6f1663f60f8ab891e5358977130e88e6a3236907"
+              ],
+              "z": [
+                "0ca56dfc6560ab5e806191be5e8a6a31a467d67cf05257dcf85855bd1e2dc805",
+                "ad37557c2462745bfd855c597a5f4c76102fae53bca1a763d9a862940ccd240b"
+              ]
+            }
+          ],
+          "constraint_proofs": [
+            {
+              "c": "7c9c4dcb46f00c70aca258536c7cca50ef2b3dedd32f4cc55ee087302ec89e0e",
+              "z": "00c7f664c93da0f7ef7c85b4713a9018a158c1a8624abf8eb3238c947216f504"
+            },
+            {
+              "c": [
+                "eeed91e95de4aeffab6d3044a4c466d05897755934902f2d4f8489ff0bda7a0f",
+                "8f6c98f290e7dfcd369475712c3c6701fdf833d5771e34d090ec1987bf44f400"
+              ],
+              "z": [
+                "ba238bdcd1d365e0154541a301e4d345243e1759f3f7b148de03c399162bfe08",
+                "27c224cdecdf2b7e33657145be66fae2b386171fa314747b08b843a4d412b70a"
+              ]
+            },
+            {
+              "c": [
+                "7f84bf686c7d2bb4802ccfb3b43775a7cceb76cf4fa9ae2e0a8a1eb9fb603002",
+                "80a142c4f3ebb176ed395017f9e41cf8e2f06191178254077c601d7f82af090f"
+              ],
+              "z": [
+                "d45ab6469379b76bffe0d078c4758a7752ea9f3b79f3974a342a5c0e15f44b0b",
+                "726265b426083b0b265685666d1b1dc0a72bb61c73acc43fd781375d8d232901"
+              ]
+            },
+            {
+              "c": [
+                "03118df82cbaa6ecc436fcb98fcfa0f483b21094fb1c7964486ad2f6ee414a0e",
+                "a678085a296c220b9e0660a5ea9c74989a07a4b5f8059311dc5836178a64bd0e"
+              ],
+              "z": [
+                "bbbaca9b212e196e99126ad9a5a663ef84f12c29927ff5563d2964f45951da05",
+                "6c1a03096f4ab12368d73b97ff69c4de344886dedabedadcf8019e167967ab0c"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "sequence": 4,
+        "tracking_code": "dd7b1f4fe56cc1684c907152d43641334efad3ae2499d17c2ebd51198915fcc9",
+        "short_code": "VNXH-YKZ5-DK0P-GK4G",
+        "status": "counted",
+        "ballot": {
+          "election_id": 7,
+          "manifest_id": 1,
+          "manifest_hash": "e8e8e5c33158276f59e1ef279bef6de40eccab80bb77d117202800e77c68c7ac",
+          "credential": "cred-c",
+          "ciphertexts": [
+            {
+              "a": "b274674e30edf476117b681cf02422bc21c7bec6b6ddfdf17526d2381fd9453f",
+              "b": "44864342b0986bdfe0b0ac91609e0ec42e1bf341990cd287fc6dc12dcaee2c77"
+            },
+            {
+              "a": "1ee82bf2972b70c78a80303528a051641232794a40f9493ee44c55f563b01d4f",
+              "b": "585f9b4bf91433ff8f632c6363d81a2a2fa4bf2bca461a478471fde43778331a"
+            },
+            {
+              "a": "803d27fd904d6046ba652942e7cc6b1ffa8f46df191f951218778f50a8e9b001",
+              "b": "88dece43f650d2cc73b8392f1ec87a8ae94ad03fbe5d720b33e6e7d70d9e0e61"
+            },
+            {
+              "a": "46a130ae8e04ba8efbb673f6061c7a1eef44bfba47317b996de4725173bf302e",
+              "b": "3a905cff49855eac00f49a01e3050495ab1b3fa317947ad6b2c1759d0dc87f71"
+            },
+            {
+              "a": "7ad876d63dda45bf5f07d70ebb2f5675cf382c927a8fcc254dd570a3ee88a576",
+              "b": "7a734f74246d3565b7cb4733212243f6504553ff2970e3c4c5ff6e4a4f85df46"
+            }
+          ],
+          "option_proofs": [
+            {
+              "c": [
+                "792a6f8561f474b560a263b109286d359d58cea43c3da5d96e3e8fcecce72901",
+                "8e935644e594686118adb3d7c03134d63870e74413c1d6c7b995e5bf95851101"
+              ],
+              "z": [
+                "931e3d6729683bab12b1e807bbe3049efd287b5fc2de608bb11aa226d3be7d0c",
+                "86983b0b9479905f4fb03802582efb4e9e106b8437987e183948d5633c11a302"
+              ]
+            },
+            {
+              "c": [
+                "50754c96607096e7a1f0a90516247c1ae29ee28bf8dec0e869d8368cc24b5400",
+                "5363631ce3e482d7df77a909f57d841dcd9a9a5c71f8af042b544eb277d76d00"
+              ],
+              "z": [
+                "009328e45f99675b706f09a1a6157c92fb8c5c52effe359b5c526ef5955fe30e",
+                "f5339bedb657def9860644b02d536d5f4bd61f828991411b4196ce241f66a309"
+              ]
+            },
+            {
+              "c": [
+                "6a0d2e8c2b8f9e10a55fa74eebb73090532b36f31673d5278a66e55c2985ce06",
+                "df0917a3a183ee307c34a5d9d885210ace5b5a47c7fae3473fe60435c99ccb0c"
+              ],
+              "z": [
+                "3b7309f3d6adeb83e19bcad85f506ad1cf91512d36636105fbe11b43ebf1f30f",
+                "b128f1ad2356b0172559ba601a7bf0ebee60e05988368bc19503666381677f07"
+              ]
+            },
+            {
+              "c": [
+                "ba4ce14e9b5047969def6a71c83546ed34ed7ded90bd3de438717ca86fe14102",
+                "0fa91762f1747a6a5940666d13056b339dfa4e3909837d1a779309a721894e02"
+              ],
+              "z": [
+                "1c1d410e26ec43314a64ffe23e4927a896639eb4f7f8c5735a5ef068c369b80f",
+                "25fbb38961456470f6cdafa6263cb5eea598d1fb46cad52144961b7cfc1a1e03"
+              ]
+            },
+            {
+              "c": [
+                "4280374804e5386f0c8e23320b77c5dded10397308e4fd7f0d1cbfcd27fd8d03",
+                "03dcccdf824f2e89b937bed8d478def84c51b3aecf9998e335540197ccb83000"
+              ],
+              "z": [
+                "36e4c6faa3b64aec53bcd2e8b722062a4ea5109b0b9fe4b770ee9a1eddcd740b",
+                "fd4f1073beb45946eec36a4e234f43f1f7a8de11f02a41fe9e6ea218d36caa03"
+              ]
+            }
+          ],
+          "constraint_proofs": [
+            {
+              "c": "43c5dae32a047195317c352a3535d91d9e0aa86bc3d1e1574314e1ed3b290206",
+              "z": "cdc69420ed5b0d50bad4af165049bb3e22950eb316fafbf13065274a5b2aa603"
+            },
+            {
+              "c": [
+                "62af61583dc2e7137405b1532b8e38b931ca037df519348eae400f97b624e001",
+                "bdf1545560420916949c88dfae1cb680de956424a918397f8cf217465685e90d"
+              ],
+              "z": [
+                "e614e1b4eb1ac7e550604cc30205178866488db3d25eb57e2e66ddb923ef080e",
+                "701b41552aded342a01e36188727a2eac4659b499fedcc92cc1acb835a3ebb01"
+              ]
+            },
+            {
+              "c": [
+                "0006e6a32ea68e754aa0ed9d026a0c7f8e15399f26ecbc8c02cd7ac8d0356e00",
+                "8c887a0d2b67188fbfb09812f1bead31774f497d92c1fe40f63915af99115005"
+              ],
+              "z": [
+                "d5c8f58c12f28e19491b91469104dff0f4803f94f50ff9a93dea45d0c4d9180a",
+                "96bf0991d6102bee371d7cc2de1440f3d7082a3f2e4944053b967584d10aba0d"
+              ]
+            },
+            {
+              "c": [
+                "efbc55b1a9e0175b15070f869336750e48d7615ac39ac234fdfa2e538badda08",
+                "c1f79e3646aa443af201363f155c060b9c88f7abd86c3ec01fc7e6c31d593904"
+              ],
+              "z": [
+                "378ff55c80a7811821176e6fdb2276e2411622c5825c8b56a4e7ad568199090e",
+                "d95b4dbd6ac8e574014a367a8344747ff2bd28b8e4ce88e6a2452c511748020b"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "audited_ballots": [],
+    "tally": {
+      "aggregates": [
+        {
+          "key": "c3/list:100",
+          "constituency_id": 3,
+          "a": "e2075cef5836911ae697276eb192a5da3b98306275de924f578b76bf19158b7c",
+          "b": "44b57b1a0dfedfa1cee722150212e38dd70a0e2210329e62abb5ffd8f846257e"
+        },
+        {
+          "key": "c3/list:101",
+          "constituency_id": 3,
+          "a": "62b8b3887a67fb4d716538ec56dc76dfc5f29de07500eca3b3e32b1a81e3e970",
+          "b": "f875b21f12309719676c1a1c6f0e82e837c5e9fcb71e8b515729f02100b3e220"
+        },
+        {
+          "key": "c3/candidate:500",
+          "constituency_id": 3,
+          "a": "80c4d2e1c6324f84d71896631dd9233bd21e0e4c233beb2ba36c6e64db790c22",
+          "b": "5a65b13afe49a71ee38153c6ada58d431b1cfec985a0036f84314e15402d0916"
+        },
+        {
+          "key": "c3/candidate:501",
+          "constituency_id": 3,
+          "a": "fa52f9e13a1595a1d49f936c87d6a50eee3eb36f890adedf63f4d3924d8d1326",
+          "b": "9c880653025e3901bfc8ba8848c3c231e2d852250a42296f9c3c47997c7d8d6f"
+        },
+        {
+          "key": "c3/candidate:600",
+          "constituency_id": 3,
+          "a": "26d464c56784c71f7dfdde8c29628d15035ebac6dcbea4c1961dfe75a6c5375b",
+          "b": "6a454e4c62c984478c567c39591349b43bf76291060f1fc24df346479fc02511"
+        }
+      ],
+      "ballot_counts": {
+        "3": 3
+      },
+      "partials": [
+        {
+          "trustee_index": 1,
+          "shares": [
+            {
+              "key": "c3/list:100",
+              "m": "28a8b669f39a5a30d87d6730fd5a1b74a9ae2d1c996944b60c247b6047bf0c11",
+              "proof": {
+                "c": "840743e621f6b72736fb30cdf8e951159157fa290b428ed23983d1050076fc05",
+                "z": "adb2e1d6af786ed7f19d3d0ed3ddf81d79b2036e621193ec64b623cc60b6eb0a"
+              }
+            },
+            {
+              "key": "c3/list:101",
+              "m": "daef347f6564968bf52e8e877a2bf24961bd6dba037cd9f5f63cde726261827d",
+              "proof": {
+                "c": "80b1224b6ab29f5fb2a45b8a4b6e86df567f316ce593bc537a47505841d63e0e",
+                "z": "b2180fe0a80d4cab5cf1c46e8b3701dd2d9790e8caa1c6996e8cec13d9905f0c"
+              }
+            },
+            {
+              "key": "c3/candidate:500",
+              "m": "b6b3c4ba3d8b8bb7b3d3986650a9b0a1b12d18334dffa7b23c358d3d4729f859",
+              "proof": {
+                "c": "05733dd433f18952b8150b78aba0afd4a19f64d13f1b348af8acd812effbed08",
+                "z": "f528fd5ba6e47396260c151f4b35a13c40412a48f74917c439ec7fd4473fb50f"
+              }
+            },
+            {
+              "key": "c3/candidate:501",
+              "m": "1297ac3e24a61d496aec8d208b1f0eb5fc87ab4b946809ba15649ee395fc6304",
+              "proof": {
+                "c": "ba7234f6f720196c7feafc570759a7b14dc983d8ab81e14fcdfb324e69fd8702",
+                "z": "39086dc3c5a4390a49a73e43b40bc772b8ce64333c7fac20912a24cde73d240a"
+              }
+            },
+            {
+              "key": "c3/candidate:600",
+              "m": "024c5aef4e663caff96797e6622ab8cf00e8ba555d18dbd9a483625fe6978715",
+              "proof": {
+                "c": "a917f2765e6e820400a5b7b64ec760b09836d3751aca2b6bea48f25233b37e0a",
+                "z": "67bcb3e034ccddcdae8de01e99af43ba6cfba5e166e1df3b94f90cde5624d304"
+              }
+            }
+          ]
+        },
+        {
+          "trustee_index": 3,
+          "shares": [
+            {
+              "key": "c3/list:100",
+              "m": "3ee7c5422af83f32887f4dd59695d8d19aca9c0ab9d29b25dc0c0bb42eca2e46",
+              "proof": {
+                "c": "c848b0fec894d756df993af011991c981822c3fe526a09435341601f346d8409",
+                "z": "64a0bef972861423a26c060ecad4f9ced43a45542bc37e38642a31a0f83ffe0f"
+              }
+            },
+            {
+              "key": "c3/list:101",
+              "m": "f2b569be94ccda65b195801d1bfed24ba2c1f698700f8ca091e6ec5273268b4a",
+              "proof": {
+                "c": "91f21a367d3f440b4f0ad615871d3adcc1cf5d53605ce4adec55453894a24604",
+                "z": "939950cfe6b78292ca4d690c97b8b042cbd43ae0b3fbebe0e54c06a8476c880a"
+              }
+            },
+            {
+              "key": "c3/candidate:500",
+              "m": "0e8fc6cf3a04ff8ec00840738a635dc2a59e042912c4798827f16be3b0f5d82a",
+              "proof": {
+                "c": "19f7fa46b70ffaadc5657239ba9c0126d8c04bad2e47f4c4a1f78cf4c2dd5805",
+                "z": "ef81000d894c14944fda1e52f3ac789f989ff7eb730e13bd21322b32e7bc920d"
+              }
+            },
+            {
+              "key": "c3/candidate:501",
+              "m": "acb1c9d0939299e56b793ca091a39ee740d25056882279bfcf2e1589d3775d43",
+              "proof": {
+                "c": "dbfe30cb4fb38e96d351e3b016f9cfc62cf4ad43cf314376bd0676b7e51e1001",
+                "z": "9acfaa2d3d728257fa9d09b9fd5d7864540cae9fe1768f3a186ef9568e556d09"
+              }
+            },
+            {
+              "key": "c3/candidate:600",
+              "m": "c4a81d42ec26799c2c9cfc3ad9c0c691a5843d6b35aaff08bd0e1a9d82342442",
+              "proof": {
+                "c": "10a9d7edd71524b9ca5bea3fe7f0194aad9256cac266291e8aaebdf855f0ba07",
+                "z": "9c3a97fa62a6ae292ff8873a55495117a8bfada1be4262567782213e9421fa02"
+              }
+            }
+          ]
+        }
+      ],
+      "used_trustees": [
+        1,
+        3
+      ],
+      "results": [
+        {
+          "key": "c3/list:100",
+          "count": 1
+        },
+        {
+          "key": "c3/list:101",
+          "count": 2
+        },
+        {
+          "key": "c3/candidate:500",
+          "count": 0
+        },
+        {
+          "key": "c3/candidate:501",
+          "count": 1
+        },
+        {
+          "key": "c3/candidate:600",
+          "count": 1
+        }
+      ]
+    }
+  },
+  "keyfile": {
+    "file": {
+      "meta": {
+        "format": "evote-keyfile-v1",
+        "kind": "share",
+        "election_id": 7,
+        "trustee_index": 2,
+        "created_at": "2026-09-22T22:26:15.837Z"
+      },
+      "kdf": {
+        "name": "argon2id",
+        "t": 1,
+        "m": 256,
+        "p": 1,
+        "salt": "28484e13950a4d2c18e4d3402eca6253"
+      },
+      "cipher": {
+        "name": "aes-256-gcm",
+        "nonce": "9d6243166787c0e0110b593c"
+      },
+      "ciphertext": "c25dfbaa2251a30c4f0144efcfce172e130e6366df57725eed953c0019d0768222082a524a7a2dd82d9e623f384f909bdb76242a3754f6a9745d5b050f2f97971b3b5da7aae0786c08d08bb016fedf333a581b2b30a226aac49cae3f"
+    },
+    "passphrase": "demo passphrase 123",
+    "plaintext": {
+      "share": "1606fc38b52eb980f521e76ca6277c1606088625fca7e58caa9c08d65c868e03"
+    }
+  }
+}

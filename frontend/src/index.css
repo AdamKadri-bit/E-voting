@@ -40,7 +40,7 @@ body {
     "Noto Sans", "Helvetica Neue", sans-serif;
   color: var(--gov-ink);
   background: radial-gradient(1100px 650px at 20% 0%, #132a58 0%, var(--gov-bg) 58%)
-    fixed;
+    fixed var(--gov-bg);
 }
 
 :root[data-theme="light"] body {
@@ -49,7 +49,7 @@ body {
       rgba(154, 122, 18, 0.16) 0%,
       var(--gov-bg) 58%
     )
-    fixed;
+    fixed var(--gov-bg);
 }
 
 a {
@@ -198,24 +198,6 @@ button {
   height: 1px;
   flex: 1;
   background: var(--gov-edge);
-}
-
-.govOAuthStack {
-  display: grid;
-  gap: 10px;
-}
-
-.govOAuthBtn {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.govOAuthLeft {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .govError {

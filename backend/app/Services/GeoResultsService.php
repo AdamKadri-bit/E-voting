@@ -193,7 +193,10 @@ class GeoResultsService
                 'status' => $election->status,
                 'starts_at' => $election->starts_at,
                 'ends_at' => $election->ends_at,
+                'crypto_scheme' => $election->crypto_scheme,
+                'tally_status' => $election->tally_status,
             ],
+            'results_available' => !$election->isE2e() || $election->tally_status === 'published',
             'totals' => array_merge($totals, [
                 'turnout_percentage' => $totals['registered'] > 0
                     ? round(($totals['voted'] / $totals['registered']) * 100, 1)
@@ -211,6 +214,11 @@ class GeoResultsService
      */
     private function talliesByConstituency(Election $election): array
     {
+        // End-to-end: per-constituency counts exist only after threshold decryption.
+        if ($election->isE2e()) {
+            return app(\App\Services\E2e\TallyService::class)->publishedTallies($election);
+        }
+
         $out = [];
 
         EncryptedBallot::query()

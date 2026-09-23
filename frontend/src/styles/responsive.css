@@ -1,0 +1,483 @@
+/*
+ * System-wide mobile & tablet layer.
+ *
+ * The existing pages are styled inline, so this file does two jobs:
+ *  1. global rules every page needs on small screens (safe-area insets, 44px
+ *     touch targets, 16px form text so iOS doesn't zoom, no sideways scroll);
+ *  2. shared layout classes (gv-*) used by the new pages and by the pages
+ *     fixed in the responsive audit.
+ */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  /*
+   * Nothing may push the page sideways; wide content scrolls in its own box.
+   * `clip`, not `hidden`: with html/body at height:100%, `hidden` would turn
+   * body into its own scroll container and break fixed/sticky positioning.
+   */
+  overflow-x: clip;
+}
+
+.govPage {
+  overflow-x: clip;
+}
+
+img,
+svg,
+canvas,
+video {
+  max-width: 100%;
+}
+
+/* ---- 16px form text: below this iOS Safari zooms the page on focus ---- */
+input,
+select,
+textarea,
+.govInput {
+  /* !important so it also wins over the inline font sizes of older admin forms. */
+  font-size: max(16px, 1em) !important;
+}
+
+/* ---- touch targets ---- */
+.govBtn,
+button,
+[role="button"],
+a.govBtn,
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 44px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  min-width: 22px;
+  min-height: 22px;
+}
+
+.govInput,
+select.govInput {
+  min-height: 44px;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(201, 162, 39, 0.75);
+  outline-offset: 2px;
+}
+
+/* ---- notched phones ---- */
+.govTopBar {
+  padding-top: max(14px, env(safe-area-inset-top));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+.govMain {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 24px));
+}
+
+/* ---- shared layout classes ---- */
+.gv-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 0 48px;
+  min-width: 0;
+}
+
+.gv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 14px;
+  background: rgba(201, 162, 39, 0.14);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  color: var(--gov-gold);
+}
+
+.gv-pill.green {
+  background: rgba(71, 167, 111, 0.14);
+  border-color: rgba(71, 167, 111, 0.28);
+  color: #47a76f;
+}
+
+.gv-pill.blue {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+}
+
+.gv-title {
+  font-size: clamp(26px, 5.4vw, 40px);
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.gv-sub {
+  margin: 12px 0 0;
+  color: var(--gov-muted);
+  font-size: 15px;
+  line-height: 1.7;
+  max-width: 760px;
+}
+
+.gv-card {
+  border: 1px solid var(--gov-edge);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--gov-card) 0%, var(--gov-card2) 100%);
+  box-shadow: var(--gov-shadow);
+  padding: 20px;
+  min-width: 0;
+}
+
+.gv-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.gv-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.gv-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gv-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+
+.gv-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 12px;
+}
+
+.gv-stat {
+  border: 1px solid var(--gov-edge);
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+
+.gv-stat .k {
+  font-size: 12px;
+  color: var(--gov-muted);
+  font-weight: 800;
+}
+
+.gv-stat .v {
+  font-size: clamp(20px, 4.5vw, 26px);
+  font-weight: 900;
+  margin-top: 4px;
+}
+
+.gv-muted {
+  color: var(--gov-muted);
+}
+
+.gv-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.gv-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--gov-edge);
+  background: rgba(255, 255, 255, 0.03);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.gv-notice.info { border-color: rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.08); }
+.gv-notice.ok { border-color: rgba(71, 167, 111, 0.35); background: rgba(71, 167, 111, 0.1); }
+.gv-notice.warn { border-color: rgba(217, 119, 6, 0.4); background: rgba(217, 119, 6, 0.1); }
+.gv-notice.error { border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); }
+
+.gv-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--gov-edge);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--gov-ink);
+  font-weight: 900;
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.gv-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.gv-btn.primary { background: rgba(71, 167, 111, 0.2); color: #47a76f; border-color: rgba(71, 167, 111, 0.45); }
+.gv-btn.gold { background: rgba(201, 162, 39, 0.2); border-color: rgba(201, 162, 39, 0.6); }
+.gv-btn.blue { background: rgba(59, 130, 246, 0.16); color: #60a5fa; border-color: rgba(59, 130, 246, 0.45); }
+.gv-btn.danger { background: rgba(239, 68, 68, 0.12); color: #f87171; border-color: rgba(239, 68, 68, 0.4); }
+.gv-btn.block { width: 100%; }
+
+/* Tables scroll inside their own box, never the page. */
+.gv-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--gov-edge);
+  border-radius: 12px;
+}
+
+.gv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.gv-table th,
+.gv-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--gov-edge);
+  white-space: nowrap;
+}
+
+.gv-table th {
+  font-size: 12px;
+  color: var(--gov-muted);
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Bars that stay pinned to the bottom of the viewport (ballot Cast/Audit). */
+.gv-sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(7, 16, 34, 0) 0%, var(--gov-bg) 28%);
+}
+
+:root[data-theme="light"] .gv-sticky-actions {
+  background: linear-gradient(180deg, rgba(246, 247, 251, 0) 0%, var(--gov-bg) 28%);
+}
+
+.gv-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.gv-progress > div {
+  height: 100%;
+  background: linear-gradient(90deg, #47a76f, #c9a227);
+  transition: width 120ms linear;
+}
+
+/* Thumb-sized ballot choices with an unmistakable selected state. */
+.gv-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 2px solid var(--gov-edge);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--gov-ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  touch-action: manipulation;
+}
+
+.gv-choice[aria-checked="true"] {
+  border-color: #47a76f;
+  background: rgba(71, 167, 111, 0.14);
+  box-shadow: 0 0 0 3px rgba(71, 167, 111, 0.18);
+}
+
+.gv-choice .dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid var(--gov-edge);
+  box-sizing: border-box;
+}
+
+.gv-choice[aria-checked="true"] .dot {
+  border: 7px solid #47a76f;
+}
+
+.gv-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(22px, 6.4vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  word-spacing: 0.1em;
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+/* ---- breakpoints ---- */
+@media (max-width: 960px) {
+  .gv-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  /*
+   * Responsive audit: pages built with inline multi-column grids collapse to
+   * one column on phones. Only fractional multi-column patterns are matched;
+   * "auto 1fr auto" row layouts (icon · text · tick) are left alone.
+   */
+  [style*="fr 1fr"],
+  [style*="repeat(2"],
+  [style*="repeat(3"],
+  [style*="repeat(4"],
+  [style*="repeat(13"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Children placed with "span N" would recreate the columns — reset them. */
+  [style*="repeat(13"] > * {
+    grid-column: auto !important;
+  }
+
+  .gv-page {
+    padding: 20px 0 32px;
+  }
+
+  .gv-card {
+    padding: 16px;
+  }
+
+  .govTopBarLeft {
+    min-width: 0 !important;
+  }
+
+  .govBrandSub {
+    display: none;
+  }
+
+  .govBrandTitle {
+    font-size: 14px;
+  }
+
+  .govMain {
+    padding-top: 84px;
+  }
+
+  .gv-hide-sm {
+    display: none !important;
+  }
+}
+
+@media (min-width: 761px) {
+  .gv-show-sm {
+    display: none !important;
+  }
+}
+
+/* Landscape phones: short viewport, keep sticky bars slim. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .gv-sticky-actions {
+    position: static;
+  }
+
+  .govTopBar {
+    position: absolute;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---- admin panel: sidebar becomes a drawer on phones and small tablets ---- */
+.gv-show-admin-sm {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .gv-show-admin-sm {
+    display: inline-flex !important;
+  }
+
+  .gv-admin-side {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 120;
+    width: min(84vw, 300px) !important;
+    background: var(--gov-bg) !important;
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+    padding-top: max(20px, env(safe-area-inset-top)) !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .gv-admin-side.open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .gv-admin-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .gv-admin-header {
+    padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 12px max(14px, env(safe-area-inset-left)) !important;
+  }
+
+  .gv-admin-main {
+    padding: 16px max(12px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)) !important;
+  }
+}
+
+/*
+ * Sign-in / sign-up shell: its grids used an auto track that grew to the
+ * 560px card, so max-width:100% never kicked in and phones scrolled sideways.
+ */
+.govHero,
+.govHeroInner {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+}

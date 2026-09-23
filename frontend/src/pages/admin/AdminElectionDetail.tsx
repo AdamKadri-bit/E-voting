@@ -14,16 +14,20 @@ import {
   adminRemoveCandidate,
   type AdminElection,
   type AdminConstituency,
+  type AdminCandidacy,
+  type AdminList,
 } from "../../lib/api";
 import { CandidateSheetImport } from "../../components/admin/CandidateSheetImport";
+import E2eElectionPanel from "../../components/admin/E2eElectionPanel";
+import { errorMessage } from "../../lib/errors";
 
 export default function AdminElectionDetail() {
   const { electionId } = useParams();
   const eid = Number(electionId);
 
   const [election, setElection] = useState<AdminElection | null>(null);
-  const [lists, setLists] = useState<any[]>([]);
-  const [candidacies, setCandidacies] = useState<any[]>([]);
+  const [lists, setLists] = useState<AdminList[]>([]);
+  const [candidacies, setCandidacies] = useState<AdminCandidacy[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,8 +45,8 @@ export default function AdminElectionDetail() {
       setElection(e.election);
       setLists(l.lists);
       setCandidacies(c.candidacies);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -62,6 +66,8 @@ export default function AdminElectionDetail() {
         <div style={{ color: "var(--gov-muted)" }}>Election not found.</div>
       ) : (
         <div style={{ display: "grid", gap: 24 }}>
+          <E2eElectionPanel election={election} onChange={load} />
+
           {/* Import comes first: it can attach constituencies itself, so it
               works even on an election with nothing set up yet. */}
           <CandidateSheetImport
@@ -116,7 +122,7 @@ function CandidacySection({
 }: {
   eid: number;
   consts: AdminConstituency[];
-  candidacies: any[];
+  candidacies: AdminCandidacy[];
   onChange: () => void;
 }) {
   const [f, setF] = useState({
@@ -137,8 +143,8 @@ function CandidacySection({
       await adminCreateCandidacy(eid, { ...f, constituency_id: Number(f.constituency_id) });
       setF({ ...f, national_id_number: "", full_name: "", full_name_ar: "", date_of_birth: "" });
       onChange();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -188,7 +194,7 @@ function ListsSection({
 }: {
   eid: number;
   consts: AdminConstituency[];
-  lists: any[];
+  lists: AdminList[];
   onChange: () => void;
 }) {
   const [f, setF] = useState({
@@ -213,8 +219,8 @@ function ListsSection({
       });
       setF({ ...f, list_name_en: "", list_name_ar: "", list_code: "" });
       onChange();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -247,8 +253,8 @@ function ListsSection({
   );
 }
 
-function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
-  const [available, setAvailable] = useState<any[]>([]);
+function ListCard({ list, onChange }: { list: AdminList; onChange: () => void }) {
+  const [available, setAvailable] = useState<AdminCandidacy[]>([]);
   const [picked, setPicked] = useState<number | "">("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -256,8 +262,8 @@ function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
     try {
       const d = await adminAvailableCandidacies(list.id);
       setAvailable(d.candidacies);
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -273,8 +279,8 @@ function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
       await adminAddCandidate(list.id, { candidacy_id: Number(picked) });
       setPicked("");
       onChange();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -283,8 +289,8 @@ function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
     try {
       await adminRemoveCandidate(list.id, lcId);
       onChange();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -294,8 +300,8 @@ function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
     try {
       await adminDeleteList(list.id);
       onChange();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(errorMessage(e));
     }
   }
 
@@ -318,7 +324,7 @@ function ListCard({ list, onChange }: { list: any; onChange: () => void }) {
       {err && <div className="govError" style={{ marginTop: 8 }}>{err}</div>}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-        {members.map((m: any) => (
+        {members.map((m) => (
           <span key={m.id} style={{ fontSize: 12, padding: "4px 8px 4px 10px", borderRadius: 999, border: "1px solid var(--gov-edge)", display: "inline-flex", alignItems: "center", gap: 6 }}>
             {m.candidacy?.candidate_profile?.full_name ?? `#${m.candidacy_id}`}
             <button onClick={() => remove(m.id)} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--gov-muted)", padding: 0, display: "inline-flex" }}>

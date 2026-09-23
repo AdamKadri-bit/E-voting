@@ -1,15 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardLayout from "../components/layouts/DashboardLayout";
 import { Card } from "../components/common/Card";
 import {
-  extractLebaneseIdOcr,
+  extractIdentityDocument,
   linkRegistry,
   getMe,
+  type IdentityDocumentType,
   type LebaneseIdOcrData,
+  type IdentityDocumentResult,
   type RegistryLinkPayload,
 } from "../lib/api";
+import { errorMessage } from "../lib/errors";
+
+type DocChoice = IdentityDocumentType | "manual";
+
+/** The documents a voter can verify with. Diaspora voters often only have their passport or an extract at hand. */
+const DOCUMENTS: { key: DocChoice; title: string; text: string }[] = [
+  { key: "national_id", title: "Lebanese national ID card", text: "Photos of the front and the back." },
+  { key: "ikhraj_qayd", title: "Ikhraj qayd (إخراج قيد فردي)", text: "One photo of the individual civil-registry extract." },
+  { key: "passport", title: "Lebanese passport", text: "One photo of the photo page. You'll type your parents' names." },
+  { key: "manual", title: "Type my details instead", text: "No scan: enter your details exactly as on your civil record." },
+];
 
 function normalizeDateForSubmit(value: string) {
   return value.replace(/\//g, "-").trim();
@@ -94,11 +107,11 @@ function FilePreview({
   disabled: boolean;
   onRemove: () => void;
 }) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    if (imgRef.current) imgRef.current.src = url;
 
     return () => URL.revokeObjectURL(url);
   }, [file]);
@@ -117,20 +130,18 @@ function FilePreview({
         background: "rgba(201,162,39,0.08)",
       }}
     >
-      {previewUrl && (
-        <img
-          src={previewUrl}
-          alt={label}
-          style={{
-            width: 58,
-            height: 44,
-            borderRadius: 10,
-            objectFit: "cover",
-            border: "1px solid var(--gov-edge)",
-            background: "rgba(255,255,255,0.06)",
-          }}
-        />
-      )}
+      <img
+        ref={imgRef}
+        alt={label}
+        style={{
+          width: 58,
+          height: 44,
+          borderRadius: 10,
+          objectFit: "cover",
+          border: "1px solid var(--gov-edge)",
+          background: "rgba(255,255,255,0.06)",
+        }}
+      />
 
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 12, color: "var(--gov-muted)" }}>Uploaded</div>
@@ -371,9 +382,11 @@ function ReadOnlyField({
 export default function VoterVerificationPage() {
   const nav = useNavigate();
 
+  const [docType, setDocType] = useState<DocChoice>("national_id");
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [frontImage, setFrontImage] = useState<File | null>(null);
   const [backImage, setBackImage] = useState<File | null>(null);
-  const [extractedData, setExtractedData] = useState<LebaneseIdOcrData | null>(
+  const [extractedData, setExtractedData] = useState<IdentityDocumentResult["data"] | null>(
     null
   );
 
@@ -392,8 +405,8 @@ export default function VoterVerificationPage() {
   // which is what the 422 from the link endpoint used to mean.
   useEffect(() => {
     getMe()
-      .then((res: any) => {
-        if (res?.user?.registry_person_id) setAlreadyLinked(true);
+      .then((res) => {
+        if ((res as { user?: { registry_person_id?: number | null } })?.user?.registry_person_id) setAlreadyLinked(true);
       })
       .catch(() => {
         /* not fatal: the flow still works, it just can't warn early */
@@ -406,7 +419,23 @@ export default function VoterVerificationPage() {
     setOk(null);
     setErr(null);
     setProgress(null);
+    setWarnings([]);
   }
+
+  function chooseDocument(choice: DocChoice) {
+    setDocType(choice);
+    setFrontImage(null);
+    setBackImage(null);
+    resetExtraction();
+    if (choice === "manual") {
+      // Straight to an empty form; the server-side registry match is the same.
+      setExtractedData({} as LebaneseIdOcrData);
+      setForm(formFromExtraction({} as LebaneseIdOcrData));
+    }
+  }
+
+  const needsBack = docType === "national_id";
+  const canExtract = !!frontImage && (!needsBack || !!backImage);
 
   function handleFrontImage(file: File | null) {
     setFrontImage(file);
@@ -432,8 +461,9 @@ export default function VoterVerificationPage() {
     setErr(null);
     setOk(null);
 
-    if (!frontImage || !backImage) {
-      setErr("Upload both the front and back images first.");
+    if (docType === "manual") return;
+    if (!canExtract) {
+      setErr(needsBack ? "Upload both the front and back images first." : "Upload a photo of the document first.");
       return;
     }
 
@@ -441,9 +471,10 @@ export default function VoterVerificationPage() {
     setProgress(0);
 
     try {
-      const result = await extractLebaneseIdOcr(frontImage, backImage, setProgress);
+      const result = await extractIdentityDocument(docType, frontImage!, needsBack ? backImage : null, setProgress);
       setExtractedData(result.data);
       setForm(formFromExtraction(result.data));
+      setWarnings(result.warnings ?? []);
 
       const filled = formFromExtraction(result.data);
       const missing = REQUIRED_FIELDS.filter((f) => !filled[f.key]).map((f) => f.label);
@@ -452,13 +483,13 @@ export default function VoterVerificationPage() {
         setErr(
           `The scan could not read: ${missing.join(", ")}. Fill those in below, or upload a sharper photo.`
         );
-      } else if (!filled.civil_registry_number) {
+      } else if (docType === "national_id" && !filled.civil_registry_number) {
         setErr(
           "The registry number was not read from the back of the ID. You can add it below, or upload a sharper photo."
         );
       }
-    } catch (e: any) {
-      setErr(e?.message || "Could not extract document information.");
+    } catch (e) {
+      setErr(errorMessage(e) || "Could not extract document information.");
     } finally {
       setOcrLoading(false);
       setProgress(null);
@@ -495,8 +526,8 @@ export default function VoterVerificationPage() {
       setTimeout(() => {
         nav("/dashboard", { replace: true });
       }, 800);
-    } catch (e: any) {
-      setErr(e?.message || "Verification failed.");
+    } catch (e) {
+      setErr(errorMessage(e) || "Verification failed.");
     } finally {
       setVerifying(false);
     }
@@ -543,8 +574,9 @@ export default function VoterVerificationPage() {
               margin: 0,
             }}
           >
-            Upload both sides of the national ID. The extracted information is
-            shown as read-only and then used to check the registry.
+            Choose the document you have — national ID, ikhraj qayd or passport —
+            or type your details. You can check and correct everything before it
+            is matched against the voter registry.
           </p>
         </div>
 
@@ -613,52 +645,109 @@ export default function VoterVerificationPage() {
 
         <Card>
           <div style={{ display: "grid", gap: 18 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
-                gap: 14,
-              }}
-            >
-              <UploadBox
-                id="front-id-upload"
-                label="Front side"
-                helper="Name, parents' names, date of birth, place of birth, and ID number."
-                file={frontImage}
-                disabled={busy}
-                onChange={handleFrontImage}
-                onRemove={removeFrontImage}
-              />
-
-              <UploadBox
-                id="back-id-upload"
-                label="Back side"
-                helper="Registry number, governorate, district, and locality."
-                file={backImage}
-                disabled={busy}
-                onChange={handleBackImage}
-                onRemove={removeBackImage}
-              />
+            <div role="radiogroup" aria-label="Document to verify with" className="gv-grid-auto" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))" }}>
+              {DOCUMENTS.map((d) => (
+                <button
+                  key={d.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={docType === d.key}
+                  className="gv-choice"
+                  disabled={busy || alreadyLinked}
+                  onClick={() => chooseDocument(d.key)}
+                  data-testid={`doc-${d.key}`}
+                >
+                  <span className="dot" aria-hidden />
+                  <span style={{ display: "grid", gap: 4 }}>
+                    <span style={{ fontWeight: 900 }}>{d.title}</span>
+                    <span className="gv-muted" style={{ fontSize: 13, lineHeight: 1.5 }}>{d.text}</span>
+                  </span>
+                  <span />
+                </button>
+              ))}
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                disabled={busy || alreadyLinked || !frontImage || !backImage}
-                onClick={handleExtract}
-                className="govBtn govBtnPrimary"
-                style={{
-                  fontWeight: 900,
-                  opacity: busy || alreadyLinked || !frontImage || !backImage ? 0.55 : 1,
-                  cursor:
-                    busy || alreadyLinked || !frontImage || !backImage
-                      ? "not-allowed"
-                      : "pointer",
-                }}
-              >
-                {ocrLoading ? "Reading document..." : "Extract information"}
-              </button>
-            </div>
+            {docType !== "manual" && (
+              <>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 270px), 1fr))",
+                    gap: 14,
+                  }}
+                >
+                  {docType === "national_id" && (
+                    <>
+                      <UploadBox
+                        id="front-id-upload"
+                        label="Front side"
+                        helper="Name, parents' names, date of birth, place of birth, and ID number."
+                        file={frontImage}
+                        disabled={busy}
+                        onChange={handleFrontImage}
+                        onRemove={removeFrontImage}
+                      />
+                      <UploadBox
+                        id="back-id-upload"
+                        label="Back side"
+                        helper="Registry number, governorate, district, and locality."
+                        file={backImage}
+                        disabled={busy}
+                        onChange={handleBackImage}
+                        onRemove={removeBackImage}
+                      />
+                    </>
+                  )}
+                  {docType === "ikhraj_qayd" && (
+                    <UploadBox
+                      id="ikhraj-upload"
+                      label="Ikhraj qayd (civil-registry extract)"
+                      helper="The whole page, flat and in focus: name, parents' names, date and place of birth, registry number."
+                      file={frontImage}
+                      disabled={busy}
+                      onChange={handleFrontImage}
+                      onRemove={removeFrontImage}
+                    />
+                  )}
+                  {docType === "passport" && (
+                    <UploadBox
+                      id="passport-upload"
+                      label="Passport photo page"
+                      helper="The page with your photo, including the two lines of <<< characters at the bottom."
+                      file={frontImage}
+                      disabled={busy}
+                      onChange={handleFrontImage}
+                      onRemove={removeFrontImage}
+                    />
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    disabled={busy || alreadyLinked || !canExtract}
+                    onClick={handleExtract}
+                    className="govBtn govBtnPrimary"
+                    data-testid="extract"
+                    style={{
+                      fontWeight: 900,
+                      opacity: busy || alreadyLinked || !canExtract ? 0.55 : 1,
+                      cursor: busy || alreadyLinked || !canExtract ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {ocrLoading ? "Reading document..." : "Extract information"}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {warnings.length > 0 && (
+              <div role="status" style={{ border: "1px solid rgba(217,119,6,0.4)", background: "rgba(217,119,6,0.1)", borderRadius: 14, padding: 12, lineHeight: 1.6 }}>
+                {warnings.map((w) => (
+                  <div key={w}>• {w}</div>
+                ))}
+              </div>
+            )}
 
             {progress !== null && (
               <UploadProgress
@@ -685,7 +774,7 @@ export default function VoterVerificationPage() {
                       color: "var(--gov-ink)",
                     }}
                   >
-                    Extracted information
+                    {docType === "manual" ? "Your details" : "Extracted information"}
                   </h2>
                   <p
                     style={{
@@ -734,11 +823,19 @@ export default function VoterVerificationPage() {
                     />
                   )}
 
-                  <ReadOnlyField label="Place of birth" value={extractedData.place_of_birth} />
-                  <ReadOnlyField label="National ID number" value={extractedData.national_id_number} />
-                  <ReadOnlyField label="Governorate" value={extractedData.governorate} />
-                  <ReadOnlyField label="District" value={extractedData.district} />
-                  <ReadOnlyField label="Locality" value={extractedData.locality} />
+                  {docType !== "manual" && (
+                    <>
+                      <ReadOnlyField label="Place of birth" value={extractedData.place_of_birth} />
+                      {docType === "passport" ? (
+                        <ReadOnlyField label="Passport number" value={extractedData.passport_number} />
+                      ) : (
+                        <ReadOnlyField label="National ID number" value={extractedData.national_id_number} />
+                      )}
+                      <ReadOnlyField label="Governorate" value={extractedData.governorate} />
+                      <ReadOnlyField label="District" value={extractedData.district} />
+                      <ReadOnlyField label="Locality" value={extractedData.locality} />
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>

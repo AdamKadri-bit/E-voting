@@ -20,12 +20,38 @@ class Election extends Model
         'starts_at',
         'ends_at',
         'status',
+        'crypto_scheme',
+        'diaspora_voting_enabled',
+        'trustee_threshold',
+        'trustee_count',
+        'key_ceremony_status',
+        'joint_public_key',
+        'tally_status',
+        'results_published_at',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'diaspora_voting_enabled' => 'boolean',
+        'trustee_threshold' => 'integer',
+        'trustee_count' => 'integer',
+        'results_published_at' => 'datetime',
     ];
+
+    /** True for end-to-end verifiable elections (threshold-encrypted ballots). */
+    public function isE2e(): bool
+    {
+        return $this->crypto_scheme !== 'legacy';
+    }
+
+    /** Polling is open right now: active and inside its window. */
+    public function isOpen(): bool
+    {
+        return $this->status === 'active'
+            && $this->starts_at !== null && $this->ends_at !== null
+            && now()->between($this->starts_at, $this->ends_at);
+    }
 
     /**
      * Closes every active election whose statutory voting window has run out.
@@ -53,6 +79,11 @@ class Election extends Model
 
         foreach ($expired as $election) {
             $election->update(['status' => 'closed']);
+
+            // An end-to-end election moves straight to its homomorphic tally.
+            if ($election->isE2e()) {
+                app(\App\Services\E2e\TallyService::class)->aggregateIfReady($election);
+            }
 
             // No actor: this transition is statutory, not an admin action.
             $audit->log(null, 'election.auto_closed', [
@@ -94,6 +125,26 @@ class Election extends Model
     public function receipts(): HasMany
     {
         return $this->hasMany(Receipt::class);
+    }
+
+    public function trustees(): HasMany
+    {
+        return $this->hasMany(ElectionTrustee::class)->orderBy('trustee_index');
+    }
+
+    public function manifests(): HasMany
+    {
+        return $this->hasMany(BallotManifest::class);
+    }
+
+    public function e2eBallots(): HasMany
+    {
+        return $this->hasMany(E2eBallot::class);
+    }
+
+    public function participations(): HasMany
+    {
+        return $this->hasMany(ElectionParticipation::class);
     }
 
     public function constituencies(): BelongsToMany
