@@ -149,6 +149,78 @@ php artisan schedule:work
 Without it nothing is lost — the admin panel also runs the sweep whenever it
 reads election data — but the status only updates when someone opens the panel.
 
+### Diaspora voting and end-to-end verifiable ballots
+
+Ballots are encrypted in the voter's browser (exponential ElGamal on
+ristretto255, with zero-knowledge proofs), counted homomorphically and
+decrypted only as totals, by a threshold of trustees. The full design, threat
+model and limitations are in [`docs/DIASPORA_AND_E2E.md`](docs/DIASPORA_AND_E2E.md).
+
+`php artisan migrate --seed` also runs `DemoE2eSeeder`, which creates four
+demo elections (open, closed with published results, a draft waiting for its
+key ceremony, and one with diaspora voting disabled) plus these accounts:
+
+| Account | Password | What it is |
+|---|---|---|
+| `admin@evoting.local` | `Admin123!` | administrator, trustee #1 |
+| `kassem@evoting.local` | `Trustee123!` | Dr. Ahmad Kassem, trustee #2 |
+| `officer@evoting.local` | `Admin123!` | election officer (admin), trustee #3 |
+| `resident@evoting.local` | `Password123!` | resident voter |
+| `diaspora@evoting.local` | `Password123!` | diaspora voter living in France |
+| `newvoter@evoting.local` | `Password123!` | voter who hasn't chosen resident/diaspora yet |
+
+The seeder simulates the open election's key ceremony and writes the demo
+trustees' key files to `backend/storage/app/demo-trustee-keyfiles/`
+(passphrase `demo trustee passphrase`) so the decryption ceremony can be shown.
+That shortcut is for demo data only — real ceremonies run in each trustee's
+browser (`php artisan demo:ceremony-election` makes a fresh draft for that).
+
+**Offline GeoIP** (country of the voter's IP, for the participation map; no
+third-party API is ever called):
+
+```bash
+php artisan geoip:update
+```
+
+It downloads DB-IP's free country database to `storage/app/geoip/country.mmdb`
+(or set `GEOIP_DB_PATH` to a GeoLite2-Country file). Without it every detected
+country is simply "unknown" — voting is never affected.
+
+**Verify an election** from the command line (independent of the server's code):
+
+```bash
+npm --prefix frontend run verify -- --election 8 --api http://localhost:8001/api
+```
+
+```bash
+php artisan election:verify 8
+```
+
+**Reproducible client build** — rebuilds the frontend and prints the SHA-256 of
+the crypto worker, which every bulletin board publishes:
+
+```bash
+scripts/reproducible-build.sh
+```
+
+**Tests**
+
+```bash
+cd backend && php artisan test
+```
+
+```bash
+cd frontend && npm test
+```
+
+```bash
+cd frontend && npx playwright install chromium && npx playwright test
+```
+
+Playwright starts its own isolated stack (Laravel on :8002 with
+`database/e2e.sqlite`, Vite on :5174) and seeds it fresh, so it never touches
+your development database. Screenshots land in `docs/screenshots/`.
+
 ---
 
 ## Keeping both machines in sync
@@ -166,8 +238,8 @@ If a merge conflicts in a lock file, resolve the conflict in `composer.json` /
 `package.json` first, then regenerate the lock.
 
 **3. Never commit secrets.**
-`backend/google-credentials.json`, `backend/cacert.pem` and every `.env` are
-gitignored. If `git status` ever shows one of them as untracked, the root
+`backend/google-credentials.json`, `backend/cacert.pem`, every `.env`, the
+GeoIP database and any trustee key file are gitignored. If `git status` ever shows one of them as untracked, the root
 `.gitignore` is broken — fix that before committing anything else.
 
 ### Why the platform pin exists
