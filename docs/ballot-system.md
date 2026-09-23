@@ -1,7 +1,6 @@
 > **Superseded.** This describes the original (V1) ballot pipeline, in which the
 > server encrypted ballots with its own key and decrypted them to tally. It has
-> been replaced by end-to-end verifiable, threshold-encrypted ballots — see
-> [`DIASPORA_AND_E2E.md`](DIASPORA_AND_E2E.md). Elections that already held V1
+> been replaced by end-to-end verifiable, threshold-encrypted ballots. Elections that already held V1
 > ballots are kept read-only as `crypto_scheme = legacy`; the plaintext
 > `POST /api/elections/{id}/vote` endpoint now answers `410 Gone`.
 

@@ -1,7 +1,7 @@
 # Backend
 
 Laravel 12 API (PHP 8.3). Setup, demo accounts and commands are in the
-[root README](../README.md); the design is in [`docs/DIASPORA_AND_E2E.md`](../docs/DIASPORA_AND_E2E.md).
+[root README](../README.md).
 
 | Path | Contents |
 |---|---|

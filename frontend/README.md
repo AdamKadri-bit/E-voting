@@ -1,7 +1,7 @@
 # Frontend
 
 React 19 + TypeScript + Vite. Setup, demo accounts and every command are in the
-[root README](../README.md); the design is in [`docs/DIASPORA_AND_E2E.md`](../docs/DIASPORA_AND_E2E.md).
+[root README](../README.md).
 
 | Command | What it does |
 |---|---|

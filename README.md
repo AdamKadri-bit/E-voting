@@ -5,7 +5,7 @@
 - Backend: Laravel 12 (PHP 8.3); server-side cryptography with libsodium (ext-sodium)
 - Database: MySQL in deployment, SQLite for local development and tests
 - Identity documents: Google Cloud Vision OCR (national ID, ikhraj qayd, passport)
-- Integrity: end-to-end verifiable ballots, a public bulletin board and an independent verifier (see `docs/DIASPORA_AND_E2E.md`)
+- Integrity: end-to-end verifiable ballots, a public bulletin board and an independent verifier
 
 ## Project Goal
 Build a secure, auditable, and transparent electronic voting system with multi-layer trust architecture.
@@ -153,8 +153,7 @@ reads election data — but the status only updates when someone opens the panel
 
 Ballots are encrypted in the voter's browser (exponential ElGamal on
 ristretto255, with zero-knowledge proofs), counted homomorphically and
-decrypted only as totals, by a threshold of trustees. The full design, threat
-model and limitations are in [`docs/DIASPORA_AND_E2E.md`](docs/DIASPORA_AND_E2E.md).
+decrypted only as totals, by a threshold of trustees.
 
 `php artisan migrate --seed` also runs `DemoE2eSeeder`, which creates five
 demo elections (open, closed with published results, a draft waiting for its
