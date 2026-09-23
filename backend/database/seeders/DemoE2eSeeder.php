@@ -5,7 +5,9 @@ namespace Database\Seeders;
 use App\Models\District;
 use App\Models\Election;
 use App\Models\ElectionParticipation;
+use App\Models\RegistryPerson;
 use App\Models\User;
+use App\Services\ElectoralRollService;
 use App\Services\E2e\KeyCeremonyService;
 use Database\Seeders\Support\DemoElectionBuilder;
 use Illuminate\Database\Seeder;
@@ -24,6 +26,11 @@ use Illuminate\Support\Facades\Hash;
  *   newvoter@evoting.local / Password123!     voter who hasn't chosen resident/diaspora yet and
  *                                             hasn't linked the voter registry (ID scan / OCR) yet
  *
+ * Tester identities (fictional, in the civil registry but not linked to any
+ * account): create an account, choose "Type my details" on Verify Voter Record
+ * and enter one of TESTERS below — the account gets a Zahle voter profile and
+ * can vote in the Zahle demo election.
+ *
  * Seeded demo trustee key files (passphrase "demo trustee passphrase") are
  * written to storage/app/demo-trustee-keyfiles/ so the decryption ceremony can
  * be demonstrated. They exist only because the seeder simulated the ceremony;
@@ -32,6 +39,15 @@ use Illuminate\Support\Facades\Hash;
 class DemoE2eSeeder extends Seeder
 {
     public const KEYFILE_PASSPHRASE = 'demo trustee passphrase';
+
+    /** Fictional Zahle residents for testers to verify as: [en, ar, father en, father ar, mother en, mother ar, birth date]. */
+    public const TESTERS = [
+        ['Elias Khoury', 'إلياس خوري', 'Antoine', 'أنطوان', 'Rima Saab', 'ريما صعب', '1992-03-14'],
+        ['Nour Saliba', 'نور صليبا', 'Fadi', 'فادي', 'Hala Nader', 'هالة نادر', '1998-11-02'],
+        ['Omar Chehab', 'عمر شهاب', 'Walid', 'وليد', 'Lina Karam', 'لينا كرم', '1989-06-21'],
+        ['Maya Sfeir', 'مايا صفير', 'Georges', 'جورج', 'Dalia Aoun', 'داليا عون', '2001-01-30'],
+        ['Tarek Mansour', 'طارق منصور', 'Samir', 'سمير', 'Mona Hayek', 'منى حايك', '1995-08-09'],
+    ];
 
     private const COUNTRIES = ['FR', 'US', 'CA', 'AU', 'DE', 'AE', 'BR', 'SA', 'GB', 'CI', 'SE', 'NG', 'QA', 'MX'];
 
@@ -98,6 +114,9 @@ class DemoE2eSeeder extends Seeder
         $b->simulateCeremony($noDiaspora, $trusteeIds, 2);
         $b->open($noDiaspora);
 
+        /* 5. Zahle: registry-built roll, open to newly created and verified accounts. */
+        $zahle = $this->zahleElection($b, $trusteeIds);
+
         $all = [$open, $closed, $draft, $noDiaspora];
 
         /* Demo login accounts. */
@@ -151,10 +170,63 @@ class DemoE2eSeeder extends Seeder
             });
         }
 
+        // A few Zahle voters so its turnout map isn't empty.
+        $zahleDistrict = District::where('name_en', 'Zahle')->firstOrFail();
+        $zahleLists = DB::table('lists')->where('election_id', $zahle->id)->orderBy('id')->pluck('id');
+        foreach (['FR', 'US', 'AU', 'CA', 'DE', 'AE', 'BR'] as $i => $country) {
+            foreach ([0, 1] as $k) {
+                $u = $b->voter("zahle-{$i}-{$k}@voters.local", "Zahle Voter{$i}{$k}", $zahleDistrict, $k ? 'resident' : 'diaspora', $k ? null : $country, [$zahle]);
+                $b->cast($zahle, $u, $zahleLists[($i + $k) % count($zahleLists)], null, $k ? 'LB' : $country);
+            }
+        }
+
         $b->closeAndDecrypt($closed, $closedShares, [1, 2]);
         $closed->update(['starts_at' => now()->subDays(20)->setTime(7, 0), 'ends_at' => now()->subDays(20)->setTime(19, 0)]);
 
         $this->command?->info('Demo e2e elections seeded. Trustee key files: ' . config('evoting.demo_keyfile_dir') . ' (passphrase: "' . self::KEYFILE_PASSPHRASE . '").');
+    }
+
+    private function zahleElection(DemoElectionBuilder $b, array $trusteeIds): Election
+    {
+        $zahleDistrict = District::where('name_en', 'Zahle')->firstOrFail();
+        $cid = (int) DB::table('constituency_districts')->where('district_id', $zahleDistrict->id)->value('constituency_id');
+
+        $election = $b->election([
+            'title' => '2026 Zahle Election (Demo)',
+            'starts_at' => now()->subHour()->startOfHour(),
+            'ends_at' => now()->addDays(7),
+        ], [['constituency_id' => $cid, 'lists' => [
+            ['name' => 'Zahle First', 'name_ar' => 'زحلة أولاً', 'candidates' => [
+                ['name' => 'Joseph Maalouf', 'name_ar' => 'جوزيف معلوف', 'district_id' => $zahleDistrict->id],
+                ['name' => 'Rania Skaff', 'name_ar' => 'رانيا سكاف', 'district_id' => $zahleDistrict->id],
+                ['name' => 'Michel Daher', 'name_ar' => 'ميشال ضاهر', 'district_id' => $zahleDistrict->id],
+            ]],
+            ['name' => 'Bekaa Renewal', 'name_ar' => 'تجدد البقاع', 'candidates' => [
+                ['name' => 'Carla Tohme', 'name_ar' => 'كارلا طعمة', 'district_id' => $zahleDistrict->id],
+                ['name' => 'Ziad Nassif', 'name_ar' => 'زياد ناصيف', 'district_id' => $zahleDistrict->id],
+            ]],
+            ['name' => 'Civic Zahle', 'name_ar' => 'زحلة المدنية', 'candidates' => [
+                ['name' => 'Lara Khalil', 'name_ar' => 'لارا خليل', 'district_id' => $zahleDistrict->id],
+                ['name' => 'Fouad Rizk', 'name_ar' => 'فؤاد رزق', 'district_id' => $zahleDistrict->id],
+            ]],
+        ]]]);
+
+        foreach (self::TESTERS as $i => [$en, $ar, $fatherEn, $fatherAr, $motherEn, $motherAr, $dob]) {
+            RegistryPerson::updateOrCreate(['civil_registry_number' => sprintf('ZAHLE-TEST-%02d', $i + 1)], [
+                'full_name_en' => $en, 'full_name_ar' => $ar,
+                'father_name_en' => $fatherEn, 'father_name_ar' => $fatherAr,
+                'mother_name_en' => $motherEn, 'mother_name_ar' => $motherAr,
+                'date_of_birth' => $dob, 'governorate' => 'Bekaa', 'district' => 'Zahle', 'locality' => 'Zahle',
+                'constituency_id' => $cid, 'is_eligible' => true, 'has_voted' => false,
+            ]);
+        }
+
+        $shares = $b->simulateCeremony($election, $trusteeIds, 2);
+        $election = $b->open($election);
+        $b->writeKeyfiles($election, $shares, self::KEYFILE_PASSPHRASE, (string) config('evoting.demo_keyfile_dir'));
+        app(ElectoralRollService::class)->syncFromRegistry($election);
+
+        return $election;
     }
 
     /** @return User[] admin, Dr. Kassem, election officer — the default 2-of-3 trustees. */

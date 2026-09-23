@@ -69,6 +69,9 @@ class RegistryLinkingService
         $user->can_vote = $person->is_eligible && !$person->has_voted;
         $user->save();
 
+        // A new account gets its voter profile (and roll entries) from the verified record.
+        app(ElectoralRollService::class)->ensureVoterProfile($user->fresh('voter'), $person);
+
         return $person;
     }
 
